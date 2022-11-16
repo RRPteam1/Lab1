@@ -4,9 +4,9 @@ using System.Linq;
 using Newtonsoft.Json;
 
 
-namespace ConsoleApp5
+namespace Server
 {
-    class TOP
+        pubclic class TOP
         {
             [JsonProperty("name")]
             public string name { get; set; }
@@ -16,7 +16,8 @@ namespace ConsoleApp5
 
             public override string ToString() => $"Name = {name} Score = {score}";
         }
-        class CRU
+    
+        public class CRU       
         {
             public List<TOP> list;
             public string DB;
