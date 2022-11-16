@@ -7,11 +7,13 @@ namespace Server
 {
     public enum PacketType : uint
     {
+        //server packets
         AcceptJoin = 2,
         IsHereAck, //server acknowledges client`s state
         GameStart,
         GameState,
         GameEnd,
+        //end of server packets
     }
     public class Packet
     {
@@ -76,6 +78,7 @@ namespace Server
 
     }
 
+    #region packets Server
     /// <summary>
     /// See task https://github.com/RRPteam1/Lab1/issues/2
     /// </summary>
@@ -106,4 +109,5 @@ namespace Server
     }
 
     //TODO game state
+    #endregion
 }
