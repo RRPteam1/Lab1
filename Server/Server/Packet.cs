@@ -8,7 +8,7 @@ namespace Server
     public enum PacketType : uint
     {
         //server packets
-        AcceptJoin = 2,
+        AcceptJoin = 1,
         IsHereAck, //server acknowledges client`s state
         GameStart,
         GameState,
