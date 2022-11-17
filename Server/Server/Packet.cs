@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Linq;
@@ -7,7 +7,6 @@ namespace Server
 {
     public enum PacketType : uint
     {
-        //server
         AcceptJoin = 1,
         IsHereAck, //server acknowledges client`s state
         GameStart,
@@ -18,6 +17,7 @@ namespace Server
         IsHere,
         JoinAck,
         GameStartAck,
+        //end of server packets
     }
     public class Packet
     {
@@ -82,6 +82,7 @@ namespace Server
 
     }
 
+    #region packets Server
     /// <summary>
     /// See task https://github.com/RRPteam1/Lab1/issues/2
     /// </summary>
@@ -112,4 +113,5 @@ namespace Server
     }
 
     //TODO game state
+    #endregion
 }
