@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Linq;
@@ -7,12 +7,16 @@ namespace Server
 {
     public enum PacketType : uint
     {
-        //server packets
         AcceptJoin = 1,
         IsHereAck, //server acknowledges client`s state
         GameStart,
         GameState,
         GameEnd,
+        //!server
+        RequestJoin,
+        IsHere,
+        JoinAck,
+        GameStartAck,
         //end of server packets
     }
     public class Packet
