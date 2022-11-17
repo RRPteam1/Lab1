@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Server
 {
-        pubclic class TOP
+        public class TOP
         {
             [JsonProperty("name")]
             public string name { get; set; }

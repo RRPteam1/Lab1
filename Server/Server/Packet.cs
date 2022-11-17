@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Linq;
@@ -7,16 +7,13 @@ namespace Server
 {
     public enum PacketType : uint
     {
+        //server packets
         AcceptJoin = 1,
         IsHereAck, //server acknowledges client`s state
         GameStart,
         GameState,
         GameEnd,
-        //!server
-        RequestJoin,
-        IsHere,
-        JoinAck,
-        GameStartAck,
+        End,
         //end of server packets
     }
     public class Packet
@@ -78,9 +75,22 @@ namespace Server
             if (data == null) return; //nothing to send
             byte[] info = Construct();
             udpClient.Send(info, info.Length, endPoint);
-        }
-
+        }  
     }
+
+    public class AcceptJoinPacket : Packet
+    {
+        public AcceptJoinPacket() : base(PacketType.AcceptJoin)
+        {
+        }
+    }
+
+    public class EndGame : Packet
+        {
+            public EndGame() : base(PacketType.End)
+            {
+            }
+        }
 
     #region packets Server
     /// <summary>
