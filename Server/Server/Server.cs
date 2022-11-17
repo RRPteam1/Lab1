@@ -19,85 +19,81 @@
                 udpClient = new UdpClient(PORT, AddressFamily.InterNetwork);
             }
 
+
             Thread netThread;
             private ConcurrentQueue<Message> inMessages = new ConcurrentQueue<Message>();
             private ConcurrentQueue<Tuple<Packet, IPEndPoint>> outMessages = new ConcurrentQueue<Tuple<Packet, IPEndPoint>>();
             private ConcurrentQueue<IPEndPoint> send_EndGame_pacetTo = new ConcurrentQueue<IPEndPoint>();
 
+            private ConcurrentDictionary<Game, byte> activeGames  = new ConcurrentDictionary<Game, byte>();
+            private ConcurrentDictionary<IPEndPoint, Game> player_in_game = new ConcurrentDictionary<IPEndPoint, Game>();
+            private Game game;
+
             private Locked<bool> running = new Locked<bool>(); //check if server is running
 
             internal void Start() => running.var = true;
 
-            internal void Run()
+            public void Run()
             {
                 if (running.var)
                 {
                     Console.WriteLine($"Server is running on port: {PORT}!");
                     netThread = new Thread(() => netRun());
                     netThread.Start();
-
-                    //set up first game
+                    setUpNewGame();//set up first game
                 }
 
                 bool temp = running.var; //temp value of state of server
                 while (temp)
                 {
-                    Message someMessage; bool inQueueMessages = inMessages.TryDequeue(out someMessage);
+                    bool inQueueMessages = inMessages.TryDequeue(out Message someMessage);
                     if (inQueueMessages)
                     {
-                        throw new NotImplementedException(); //TODO: check type of data and process it
+                        if (someMessage.packet.type == PacketType.RequestJoin)
+                        {
+                            bool add = game.TryAddPlayer(someMessage.sender);
+                            if (add) player_in_game.TryAdd(someMessage.sender, game);
+
+                            if (!add)
+                            {
+                                setUpNewGame();
+                                game.TryAddPlayer(someMessage.sender);
+                                player_in_game.TryAdd(someMessage.sender, game);
+                            }
+                            game.Enque(someMessage); //dispatch message
+                        }
+                        else if (player_in_game.TryGetValue(someMessage.sender, out Game game)) game.Enque(someMessage);
                     }
+                    else Thread.Sleep(1);
+
+                    temp &= running.var;
                 }
             }
 
-            internal void Close()
+            private void setUpNewGame()
+            {
+                game = new Game(this);
+                game.Start();
+                activeGames.TryAdd(game, 0);
+            }
+
+            public void Close()
             {
                 netThread?.Join(TimeSpan.FromSeconds(10));
                 udpClient?.Close();
             }
 
-            private void netRun() //TODO write and read date to or from the UdpClient
+            public void EndGame_notify(Game g)
             {
-                if (!running.var) return;
-                Console.WriteLine($"Server is waiting for datagrams on port: {PORT}.");
-                while (running.var)
-                {
-                    bool canRead = udpClient.Available > 0; //will use to check if we are able to read
-                    int queuedOutgoing = outMessages.Count; //how many messages we have to write
-                    int queuedToDisconnect = send_EndGame_pacetTo.Count; //how many messages of endGame
+                Game endingGame;
+                if (g.leftPlayer.isSet)
+                    player_in_game.TryRemove(g.leftPlayer.ip, out endingGame);
+                if (g.rightPlayer.isSet)
+                    player_in_game.TryRemove(g.rightPlayer.ip, out endingGame);
 
-                    if (canRead)
-                    {
-                        IPEndPoint iPEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                        byte[] buffer = udpClient.Receive(ref iPEndPoint);
 
-                        Message message = new Message
-                        {
-                            sender = iPEndPoint,
-                            packet = new Packet(buffer), //new data
-                            recvTime = DateTime.Now
-                        }; //enqueued message
-
-                        inMessages.Enqueue(message);
-                        Console.WriteLine($"Server recieved: {message.packet}"); // show recievd new Data(buffer)
-                    }
-
-                    //send queued messages
-                    for (int i = 0; i < queuedOutgoing; i++)
-                    {
-                        Tuple<Packet, IPEndPoint> tuple; //message to send
-                        bool have = outMessages.TryDequeue(out tuple);
-
-                        if (have)
-                        {
-                            tuple.Item1.Send(udpClient, tuple.Item2);
-
-                            Console.WriteLine($"Server sent: {tuple.Item1}");
-                        }
-                    }
-
-                }
-                throw new NotImplementedException();
+                activeGames.TryRemove(g, out byte b); //remove from the active games
+                Console.WriteLine($"TryRemove with data {b}");
             }
         }
     }
