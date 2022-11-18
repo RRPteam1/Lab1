@@ -7,16 +7,13 @@ namespace Server
 {
     public enum PacketType : uint
     {
+        //server packets
         AcceptJoin = 1,
         IsHereAck, //server acknowledges client`s state
         GameStart,
         GameState,
         GameEnd,
-        //!server
-        RequestJoin,
-        IsHere,
-        JoinAck,
-        GameStartAck,
+        End,
         //end of server packets
     }
     public class Packet
@@ -80,11 +77,15 @@ namespace Server
             udpClient.Send(info, info.Length, endPoint);
         }  
     }
-    
-    public class EndGame : Packet
-    {
-        public EndGame() : base(PacketType.GameEnd) { }
+
     }
+
+    public class EndGame : Packet
+        {
+            public EndGame() : base(PacketType.End)
+            {
+            }
+        }
 
     #region packets Server
     /// <summary>
