@@ -6,7 +6,6 @@
     using System.Net;
     using System.Net.Sockets;
     using System.Threading;
-    using static global::Server.Packet;
 
     namespace Server
     {
@@ -39,7 +38,7 @@
                 if (running.var)
                 {
                     Console.WriteLine($"Server is running on port: {PORT}!");
-                    netThread = new Thread(() => netRun());
+                    netThread = new Thread(new ThreadStart(netRun));
                     netThread.Start();
                     setUpNewGame();//set up first game
                 }
@@ -113,6 +112,7 @@
                     // Get data if there is some
                     if (canRead)
                     {
+                        Console.WriteLine("Got");
                         // Read in one datagram
                         IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
                         byte[] data = udpClient.Receive(ref ep);              // Blocks
@@ -125,7 +125,7 @@
 
                         inMessages.Enqueue(nm);
 
-                        //Console.WriteLine("RCVD: {0}", nm.Packet);
+                        Console.WriteLine("RCVD: {0}", nm.packet);
                     }
 
                     // Write out queued
@@ -137,7 +137,7 @@
                         if (have)
                             msg.Item1.Send(udpClient, msg.Item2);
 
-                        //Console.WriteLine("SENT: {0}", msg.Item1);
+                        Console.WriteLine("SENT: {0}", msg.Item1);
                     }
 
                     // Notify clients of Bye
@@ -174,8 +174,7 @@
                     Console.WriteLine("Server notifying remaining clients of shutdown...");
 
                     // run in a loop until we've told everyone else
-                    IPEndPoint to;
-                    bool have = send_EndGame_pacetTo.TryDequeue(out to);
+                    bool have = send_EndGame_pacetTo.TryDequeue(out IPEndPoint to);
                     while (have)
                     {
                         EndGame bp = new EndGame();

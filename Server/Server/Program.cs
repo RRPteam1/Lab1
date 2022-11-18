@@ -6,9 +6,8 @@ namespace Server
     {
         static void Main(string[] args)
         {
-            int PORT = 3000;
+            int PORT = 6000;
             Server.Server server = new Server.Server(PORT);
-
             server.Start();
             server.Run();
             server.Close();

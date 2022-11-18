@@ -134,14 +134,8 @@ namespace Server
         {
             State.var = GameState.WaitingForPlayers; //change state
 
-            gameThread = new Thread(() => gameRun());
+            gameThread = new Thread(new ThreadStart(Run));
             gameThread.Start();
-        }
-
-        private void gameRun()
-        {
-            //todo
-            throw new NotImplementedException();
         }
         
         private void Connection(Player player, Message message)
