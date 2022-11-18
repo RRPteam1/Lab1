@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Linq;
@@ -7,13 +7,17 @@ namespace Server
 {
     public enum PacketType : uint
     {
-        //server packets
         AcceptJoin = 1,
         IsHereAck, //server acknowledges client`s state
         GameStart,
         GameState,
         GameEnd,
-        End,
+        //!server
+        RequestJoin,
+        IsHere, //Hearbeat
+        JoinAck,
+        GameStartAck,
+        PaddlePos
         //end of server packets
     }
     public class Packet
@@ -78,14 +82,26 @@ namespace Server
         }  
     }
 
+    public class IsHerePacket : Packet
+    {
+        public IsHerePacket() : base(PacketType.IsHere) { }
     }
 
     public class EndGame : Packet
+    {
+        public EndGame() : base(PacketType.GameEnd) { }
+    }
+
+    public class GameStatePacket : Packet
+    {
+        public GameStatePacket() : base(PacketType.GameState)
         {
-            public EndGame() : base(PacketType.End)
-            {
-            }
+            // Allocate data for the payload (we really shouldn't hardcode this in...)
+            data = new byte[24];
         }
+
+        public GameStatePacket(byte[] bytes): base(bytes) { }
+    }
 
     #region packets Server
     /// <summary>
