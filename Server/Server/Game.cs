@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
 
@@ -70,7 +70,7 @@ namespace Server
                 }
             }
         }
-        
+
         private void GameStarting(object leftPlayer, TimeSpan timeSpan)
         {
             throw new NotImplementedException();
