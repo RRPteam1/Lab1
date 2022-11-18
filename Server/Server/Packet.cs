@@ -78,6 +78,11 @@ namespace Server
         }  
     }
 
+    public class AcceptJoinPacket : Packet
+    {
+        public AcceptJoinPacket() : base(PacketType.AcceptJoin)
+        {
+        }
     }
 
     public class EndGame : Packet
