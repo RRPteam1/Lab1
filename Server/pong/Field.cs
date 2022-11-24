@@ -149,7 +149,10 @@ namespace Pong
                         {
                             switch (mes.packet.type)
                             {
-                                //TODO: case paddle pos
+                                //GET: case paddle pos
+                                case PacketType.PaddlePosition:
+                                    handlePaddleUpdate(mes);
+                                    break;
 
                                 case PacketType.IsHere:
                                     IsHereAck hap = new IsHereAck();
@@ -173,8 +176,7 @@ namespace Pong
                 {
                     Player player = mes.sender.Equals(leftPlayer.ip) ? leftPlayer : rightPlayer;
                     running = false;
-                    Console.WriteLine("[{0:000}] Quit detected from {1} at {2}",
-                        Id, player.paddle.Side, gameTimer.Elapsed);
+                    Console.WriteLine($"[{Id}] Quit detected from {player.paddle.Side} at {gameTimer.Elapsed}");
 
                     if (player.paddle.Side == PaddleSide.Left)
                     {
@@ -199,11 +201,11 @@ namespace Pong
 
             gameTimer.Stop();
             State.var = FieldState.GameOver;
-            Console.WriteLine("[{0:000}] Game Over, total game time was {1}", Id, gameTimer.Elapsed);
+            Console.WriteLine($"[{Id}] Game Over, total game time was {gameTimer.Elapsed}");
 
             if (stopRequested.var)
             {
-                Console.WriteLine("[{0:000}] Notifying Players of server shutdown", Id);
+                Console.WriteLine($"[{Id}] Notifying Players of server shutdown");
 
                 if (leftPlayer.isSet)
                     server.SendEnd(leftPlayer.ip);
@@ -235,22 +237,22 @@ namespace Pong
 
             bool timeoutDetected = (DateTime.Now > (player.LastPacketReceivedTime.Add(Timeout)));
             if (timeoutDetected)
-                Console.WriteLine("[{0:000}] Timeout detected on {1} Player at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
+                Console.WriteLine($"[{Id}] Timeout detected on {player.paddle.Side} Player at {gameTimer.Elapsed}");
 
             return timeoutDetected;
         }
 
-        private void Connection(Player player, Message message)
+        private void Connection(Player player, Message mes)
         {
-            bool sentByPlayer = message.sender.Equals(player.ip);
+            bool sentByPlayer = mes.sender.Equals(player.ip);
             if (sentByPlayer)
             {
-                player.LastPacketReceivedTime = message.recvTime;
+                player.LastPacketReceivedTime = mes.recvTime;
 
-                switch (message.packet.type)
+                switch (mes.packet.type)
                 {
                     case PacketType.RequestJoin:
-                        Console.WriteLine("[{0:000}] Join Request from {1}", Id, player.ip);
+                        Console.WriteLine($"[{Id}] Join Request from {player.ip}");
                         sendAcceptJoin(player);
                         break;
 
@@ -295,30 +297,96 @@ namespace Pong
         {
             if (DateTime.Now >= (player.LastPacketSentTime.Add(resendTimeout)))
             {
-                //Todo: game state
+                //GET: game state
                 //set all objs
+                GameStatePacket gsp = new GameStatePacket
+                {
+                    LeftY = leftPlayer.paddle.Position.Y,
+                    RightY = rightPlayer.paddle.Position.Y,
+                    BallPosition = ball.Position,
+                    LeftScore = leftPlayer.paddle.Score,
+                    RightScore = rightPlayer.paddle.Score
+                };
+
+                sendTo(player, gsp);
             }
         }
 
-        private void handlePaddleUpdate(Message message)
+        private void handlePaddleUpdate(Message mes)
         {
-            Player player = message.sender.Equals(leftPlayer.ip) ? leftPlayer : rightPlayer;
+            Player player = mes.sender.Equals(leftPlayer.ip) ? leftPlayer : rightPlayer;
 
-            if (message.packet.timestamp > player.LastPacketReceivedTimestamp)
+            if (mes.packet.timestamp > player.LastPacketReceivedTimestamp)
             {
-                player.LastPacketReceivedTimestamp = message.packet.timestamp;
-                player.LastPacketReceivedTime = message.recvTime;
+                player.LastPacketReceivedTimestamp = mes.packet.timestamp;
+                player.LastPacketReceivedTime = mes.recvTime;
 
-               //TODO: set up paddle pos
+                //GET: set up paddle pos
+                PaddlePositionPacket ppp = new PaddlePositionPacket(mes.packet.ToBytesArr());
+                player.paddle.Position.Y = ppp.Y;
             }
         }
         #endregion
 
         #region Collision Methods
-        private void checkForBallCollisions() { }
+        private void checkForBallCollisions()
+        {
+            // Top/Bottom
+            float ballY = ball.Position.Y;
+            if ((ballY <= ball.TopmostY) || (ballY >= ball.BottommostY))
+            {
+                ball.Speed.Y *= -1;
+            }
 
-        private void processBallHitWithPaddle(PaddleSide collision) { }
+            // Ball left and right (the goals!)
+            float ballX = ball.Position.X;
+            if (ballX <= ball.LeftmostX)
+            {
+                // Right player scores! (reset ball)
+                rightPlayer.paddle.Score += 1;
+                Console.WriteLine("[{0:000}] Right Player scored ({1} -- {2}) at {3}",
+                    Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+                ball.Initialize();
+            }
+            else if (ballX >= ball.RightmostX)
+            {
+                // Left palyer scores! (reset ball)
+                leftPlayer.paddle.Score += 1;
+                Console.WriteLine("[{0:000}] Left Player scored ({1} -- {2}) at {3}",
+                    Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+                ball.Initialize();
+            }
+
+            // Ball with paddles
+            PaddleCollision collision;
+            if (leftPlayer.paddle.Collides(ball, out collision))
+                processBallHitWithPaddle(collision);
+            if (rightPlayer.paddle.Collides(ball, out collision))
+                processBallHitWithPaddle(collision);
+        }
+
+        private void processBallHitWithPaddle(PaddleCollision collision)
+        {
+            // Safety check
+            if (collision == PaddleCollision.None)
+                return;
+
+            // Increase the speed
+            ball.Speed.X *= map((float)random.NextDouble(), 0, 1, 1, 1.25f);
+            ball.Speed.Y *= map((float)random.NextDouble(), 0, 1, 1, 1.25f);
+
+            // Shoot in the opposite direction
+            ball.Speed.X *= -1;
+
+            // Hit with top or bottom?
+            if ((collision == PaddleCollision.WithTop) || (collision == PaddleCollision.WithBottom))
+                ball.Speed.Y *= -1;
+        }
+
+        private float map(float x, float a, float b, float p, float q) => p + (x - a) * (q - p) / (b - a);
+
         #endregion
+
     }
 }
 

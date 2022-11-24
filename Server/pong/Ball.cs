@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Pong
 {
@@ -8,21 +9,27 @@ namespace Pong
     public class Ball
     {
         public static Vector2 InitialSpeed = new Vector2(60f, 60f);
+        private Texture2D sprite;
         private Random rand = new Random(); //for randomization of direction
 
         public Vector2 Position = new Vector2();
         public Vector2 Speed;
 
         //boundaries
-        public int LeftmostX { get; private set; } 
+        public int LeftmostX { get; private set; }
         public int RightmostX { get; private set; }
         public int TopmostY { get; private set; }
         public int BottommostY { get; private set; }
         //!end boundaries
 
+        public Rectangle CollisionField
+        {
+            get { return new Rectangle(Position.ToPoint(), Costants.CostantBallSize); }
+        }
+
         public void LoadContent(ContentManager content)
         {
-            //todo sprites
+            sprite = content.Load<Texture2D>("ball.png"); //todo sprites
         }
 
         /// <summary>
@@ -31,9 +38,9 @@ namespace Pong
         public void Initialize()
         {
             // Center the ball
-            Rectangle playAreaRect = new Rectangle(new Point(0, 0), new Point(0, 0));
+            Rectangle playAreaRect = new Rectangle(new Point(0, 0), Costants.CostantPlayField);
             Position = playAreaRect.Center.ToVector2();
-            Position = Vector2.Subtract(Position, new Point(8, 8).ToVector2() / 2f);
+            Position = Vector2.Subtract(Position, Costants.CostantBallSize.ToVector2() / 2f);
 
             //set the velocity
             Speed = InitialSpeed;
@@ -46,9 +53,9 @@ namespace Pong
 
             //set bounds
             LeftmostX = 0;
-            RightmostX = 0;
+            RightmostX = playAreaRect.Width - Costants.CostantBallSize.X;
             TopmostY = 0;
-            BottommostY = 0;
+            BottommostY = playAreaRect.Height - Costants.CostantBallSize.Y;
         }
 
         /// <summary>
@@ -59,6 +66,11 @@ namespace Pong
         {
             float timeDelta = (float)gameTime.ElapsedGameTime.TotalSeconds;
             Position = Vector2.Add(Position, timeDelta * Speed); //ddd the distance
+        }
+
+        public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(sprite, Position);
         }
     }
 }
