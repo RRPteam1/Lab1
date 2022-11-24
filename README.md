@@ -66,5 +66,5 @@ public enum PacketType : uint
   - GameEnd
   
 # Библиотеки
-- Newtonsoft.Json
-- MonoGame.Desktop 3.5
+- Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
+- MonoGame.Desktop 3.5 _Используется для игрового движка_ [ссылка](https://www.nuget.org/packages/MonoGame.Framework.DesktopGL)
