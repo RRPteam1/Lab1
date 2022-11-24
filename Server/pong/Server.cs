@@ -16,7 +16,7 @@ namespace Pong
         Thread netThread;
         private ConcurrentQueue<Message> inMessages = new ConcurrentQueue<Message>();
         private ConcurrentQueue<Tuple<Packet, IPEndPoint>> outMessages = new ConcurrentQueue<Tuple<Packet, IPEndPoint>>();
-        private ConcurrentQueue<IPEndPoint> send_EndGame_packetTo  = new ConcurrentQueue<IPEndPoint>();
+        private ConcurrentQueue<IPEndPoint> send_EndGame_packetTo = new ConcurrentQueue<IPEndPoint>();
 
         //game management
         private ConcurrentDictionary<Field, byte> activeGames = new ConcurrentDictionary<Field, byte>();
@@ -129,7 +129,7 @@ namespace Pong
         private void netRun()
         {
             if (!run.var) return;
-             
+
             Console.WriteLine("[Server] Waiting for UDP datagrams on port {0}", PORT);
 
             while (run.var)
