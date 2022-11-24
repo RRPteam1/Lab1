@@ -2,7 +2,7 @@
 Данные проект включает себя серверную и клиентскию часть игры Пинг-Понг написанную на сокетах.
 
 
-# Table of contents
+# Оглавление
 
 - **Глава I**
 
@@ -64,3 +64,7 @@ public enum PacketType : uint
   - PaddlePosition
 - **Другие**
   - GameEnd
+  
+# Библиотеки
+- Newtonsoft.Json
+- MonoGame.Desktop 3.5
