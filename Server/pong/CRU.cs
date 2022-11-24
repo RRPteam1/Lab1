@@ -1,12 +1,12 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 
 
-namespace Server
+namespace ConsoleApp5
 {
-        public class TOP
+    class TOP
         {
             [JsonProperty("name")]
             public string name { get; set; }
@@ -16,8 +16,7 @@ namespace Server
 
             public override string ToString() => $"Name = {name} Score = {score}";
         }
-    
-        public class CRU       
+        class CRU
         {
             public List<TOP> list;
             public string DB;
