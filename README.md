@@ -53,7 +53,7 @@ public enum PacketType : uint
 ## Реализация пакетов
 - **Серверные**
   - [AcceptJoin](#AcceptJoin)
-  - IsHereAck
+  - [IsHereAck](#IsHereAck)
   - GameStart
   - GameState
 - **Клиентсие**
@@ -85,8 +85,14 @@ public class AcceptJoin : Packet
         public AcceptJoin(byte[] bytes) : base(bytes) { }
     }
  ```
-IsHereAck
+### IsHereAck
 IsHereAck – сервер отправляет клиенту, для подтверждения, что клиент все еще подключен.
+```c#
+ public class IsHereAck : Packet
+    {
+        public IsHereAck() : base(PacketType.IsHereAck) { }
+    }
+```
 GameStart
 GameStart – сервер отправляет клиенту для уведомления последнего о начале игры.
 GameState
