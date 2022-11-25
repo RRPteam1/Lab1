@@ -7,6 +7,7 @@
 - **Глава I**
 
   - [Пакет (Packet)](#Пакет-(Packet))
+  - [Установление соединения (рукопожатие)](#Установление соединения (рукопожатие))
 
 - **Заключение**
 
@@ -101,10 +102,22 @@ public class GameStart : Packet
         public GameStart() : base(PacketType.GameStart) { }
     }
 ```
-### GameState
-GameState – сервер передает клиенту положение мяча, палочек и счет.
+### GameStatePacket
+GameStatePacket – сервер передает клиенту положение мяча, палочек и счет.
 ```c#
+public GameStatePacket()
+            : base(PacketType.GameState)
+        {
+            // Allocate data for the payload (we really shouldn't hardcode this in...)
+            data = new byte[24];
 
+            // Set default data
+            LeftY = 0;
+            RightY = 0;
+            BallPosition = new Vector2();
+            LeftScore = 0;
+            RightScore = 0;
+        }
 ```
 ### GameEnd
 GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
@@ -114,7 +127,10 @@ public class EndGame : Packet
         public EndGame() : base(PacketType.GameEnd) { }
     }
 ```
-  
+## Установление соединения (рукопожатие)
+- Клиент запрашивает подключение. 
+- Сервер отвечает согласием и передает игровую сторону клиента (право/лево). 
+- Клиент отвечает, что получил пакет с установленной для него стороной игры.
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
 - Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
