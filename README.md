@@ -136,6 +136,14 @@ public class EndGame : Packet
 Все три  пакета подключения содержат в себе timestamp, чтобы определять когда был отправлен пакет. 
 Если сервер/клиен хочет повторно отправить пакет, то это возможно только после таймаута в 20 секунд, чтобы не спамить и параллельно проверять потерю соединения. 
 В этих пакетах проверка, чтоб были отправлены пакеты GameStart/GameStartAck. Поэтому и используется queue для отправки сообщений этих пакетов.
+```c#
+case PacketType.IsHere:
+  IsHereAck hap = new IsHereAck();
+  Player player = mes.sender.Equals(leftPlayer.ip) ? leftPlayer : rightPlayer;
+  sendTo(player, hap);
+  player.LastPacketReceivedTime = mes.recvTime;
+break;
+```
 
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
