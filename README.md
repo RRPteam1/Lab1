@@ -50,12 +50,12 @@ public enum PacketType : uint
   PaddlePosition //position of paddle
 }
 ```
-### Реализация пакетов
+## Реализация пакетов
 - **Серверные**
-  - AcceptJoin
-  - IsHereAck
-  - GameStart
-  - GameState
+  - [AcceptJoin](#AcceptJoin)
+  - [IsHereAck](#IsHereAck)
+  - [GameStart](#GameStart)
+  - [GameState](#GameState)
 - **Клиентсие**
   - RequestJoin
   - IsHere
@@ -63,7 +63,57 @@ public enum PacketType : uint
   - GameStartAck
   - PaddlePosition
 - **Другие**
-  - GameEnd
+  - [GameEnd](#GameEnd)
+
+### AcceptJoin
+AcceptJoin – сервер отправляет клиенту в ответ на запрос о подключении. Содержит в себе информацию о стороне игрока (левый/правый).
+```c#
+public class AcceptJoin : Packet
+    {
+        // Paddle side
+        public PaddleSide Side
+        {
+            get { return (PaddleSide)BitConverter.ToUInt32(data, 0); }
+            set { data = BitConverter.GetBytes((uint)value); }
+        }
+
+        public AcceptJoin() : base(PacketType.AcceptJoin)
+        {
+            data = new byte[sizeof(PaddleSide)];
+            Side = PaddleSide.None; //default value
+        }
+        public AcceptJoin(byte[] bytes) : base(bytes) { }
+    }
+ ```
+### IsHereAck
+IsHereAck – сервер отправляет клиенту, для подтверждения, что клиент все еще подключен.
+```c#
+ public class IsHereAck : Packet
+    {
+        public IsHereAck() : base(PacketType.IsHereAck) { }
+    }
+```
+### GameStart
+GameStart – сервер отправляет клиенту для уведомления последнего о начале игры.
+```c#
+public class GameStart : Packet
+    {
+        public GameStart() : base(PacketType.GameStart) { }
+    }
+```
+### GameState
+GameState – сервер передает клиенту положение мяча, палочек и счет.
+```c#
+
+```
+### GameEnd
+GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
+```c#
+public class EndGame : Packet
+    {
+        public EndGame() : base(PacketType.GameEnd) { }
+    }
+```
   
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
