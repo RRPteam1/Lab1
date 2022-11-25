@@ -17,7 +17,7 @@
   - [Библиотеки](#Библиотеки)
 
  
-# Пакет
+## Пакет
 
 Первые 4 байта отдаются _PacketType_, который указывает на тип пакета.
 Следующие 8 байт выделяются для _timestamp_ - это время отправленного пакета. После
@@ -33,7 +33,7 @@ public class Packet
   public PacketType type; //type of packet
 }
 ```
-## Типы пакетов (PacketType)
+### Типы пакетов (PacketType)
 
 Как видно у пакетов есть тип, который будет помогать с определением действий сервера или
 клиента.
@@ -54,7 +54,7 @@ public enum PacketType : uint
   PaddlePosition //position of paddle
 }
 ```
-## Реализация пакетов
+### Реализация пакетов
 - **Серверные**
   - [AcceptJoin](#AcceptJoin)
   - [IsHereAck](#IsHereAck)
@@ -69,7 +69,7 @@ public enum PacketType : uint
 - **Другие**
   - [GameEnd](#GameEnd)
 
-### AcceptJoin
+#### AcceptJoin
 AcceptJoin – сервер отправляет клиенту в ответ на запрос о подключении. Содержит в себе информацию о стороне игрока (левый/правый).
 ```c#
 public class AcceptJoin : Packet
@@ -89,7 +89,7 @@ public class AcceptJoin : Packet
         public AcceptJoin(byte[] bytes) : base(bytes) { }
     }
  ```
-### IsHereAck
+#### IsHereAck
 IsHereAck – сервер отправляет клиенту, для подтверждения, что клиент все еще подключен.
 ```c#
  public class IsHereAck : Packet
@@ -105,7 +105,7 @@ case PacketType.IsHere:
   player.LastPacketReceivedTime = mes.recvTime;
 break;
 ```
-### GameStart
+#### GameStart
 GameStart – сервер отправляет клиенту для уведомления последнего о начале игры.
 ```c#
 public class GameStart : Packet
@@ -113,7 +113,7 @@ public class GameStart : Packet
         public GameStart() : base(PacketType.GameStart) { }
     }
 ```
-### GameStatePacket
+#### GameStatePacket
 GameStatePacket – сервер передает клиенту положение мяча, палочек и счет.
 ```c#
 public GameStatePacket()
@@ -130,7 +130,7 @@ public GameStatePacket()
             RightScore = 0;
         }
 ```
-### GameEnd
+#### GameEnd
 GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
 ```c#
 public class EndGame : Packet
@@ -138,7 +138,7 @@ public class EndGame : Packet
         public EndGame() : base(PacketType.GameEnd) { }
     }
 ```
-# Установление соединения
+## Установление соединения
 - Клиент запрашивает подключение. 
 - Сервер отвечает согласием и передает игровую сторону клиента (право/лево). 
 - Клиент отвечает, что получил пакет с установленной для него стороной игры.
@@ -164,7 +164,7 @@ private ConcurrentQueue<Message> inMessages = new ConcurrentQueue<Message>();
 private ConcurrentQueue<Tuple<Packet, IPEndPoint>> outMessages = new ConcurrentQueue<Tuple<Packet, IPEndPoint>>();
 private ConcurrentQueue<IPEndPoint> send_EndGame_packetTo = new ConcurrentQueue<IPEndPoint>();
 ```
-# Начало игры
+## Начало игры
 Сервер не начнет игру, пока не будут подключены два клиента.
 Когда оба клиента подключены, сервер отправляет обоим клиентам сообщение GameStart.
 ```c#
@@ -190,18 +190,39 @@ private void GameStarting(Player player, TimeSpan retryTimeout)
         }
 ```
 Оба клиента должны ответить GameStartAck прежде, чем сервер отправит какие-либо сообщения GameState.
-# Процесс игры
-Несколько раз в секунду Клиенты, и Сервер будут отправлять друг другу информацию о своем текущем состоянии.
-*Пример кода где это написано*
+## Процесс игры
+Несколько раз в секунду клиенты и сервер отправляют друг другу информацию о своем текущем состоянии.
+```c#
+case PacketType.IsHere:
+ IsHereAck hap = new IsHereAck();
+ Player player = mes.sender.Equals(leftPlayer.ip) ? leftPlayer : rightPlayer;
+ sendTo(player, hap);
+ player.LastPacketReceivedTime = mes.recvTime;
+break;
+```
+Клиент отправляет на сервер только PaddlePosition в виде числа с плавающей запятой.
+Сервер отправляет обоим клиентам пакет GameState, содержащий позиции ракетки, мяча и текущий счет.
+```c#
+private void sendGameState(Player player, TimeSpan resendTimeout)
+{
+  if (DateTime.Now >= (player.LastPacketSentTime.Add(resendTimeout)))
+  {
+    //GET: game state
+    //set all objs
+    GameStatePacket gsp = new GameStatePacket
+    {
+      LeftY = leftPlayer.paddle.Position.Y,
+      RightY = rightPlayer.paddle.Position.Y,
+      BallPosition = ball.Position,
+      LeftScore = leftPlayer.paddle.Score,
+      RightScore = rightPlayer.paddle.Score
+    };
 
-Клиенту нужно только отправить пакет PaddlePosition.
-*Пример кода PaddlePosition*
-Передаётся одно число с плавающей запятой - позиция ракетки.
-*Пример кода отправки такого пакета*
-
-Сервер отправит пакет GameState обоим клиентам. Он будет содержать позиции ракетки и мяча, а также баллы.
-*Пример кода этого пакета*
-# Окончание игры
+    sendTo(player, gsp);
+  }
+}
+```
+## Окончание игры
 Когда игра заканчивается отправляется пакет EndGame. Сервер отправят клиентам, что игра окончена и также отправляет обновленный топ 10.
 *Пример кода EndGame, а также как сервер отправляет топ 10*
 
