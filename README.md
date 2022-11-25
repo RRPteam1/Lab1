@@ -67,6 +67,24 @@ public enum PacketType : uint
 
 # AcceptJoin
 AcceptJoin – сервер отправляет клиенту в ответ на запрос о подключении. Содержит в себе информацию о стороне игрока (левый/правый).
+```c#
+public class AcceptJoin : Packet
+    {
+        // Paddle side
+        public PaddleSide Side
+        {
+            get { return (PaddleSide)BitConverter.ToUInt32(data, 0); }
+            set { data = BitConverter.GetBytes((uint)value); }
+        }
+
+        public AcceptJoin() : base(PacketType.AcceptJoin)
+        {
+            data = new byte[sizeof(PaddleSide)];
+            Side = PaddleSide.None; //default value
+        }
+        public AcceptJoin(byte[] bytes) : base(bytes) { }
+    }
+    ```
 IsHereAck
 IsHereAck – сервер отправляет клиенту, для подтверждения, что клиент все еще подключен.
 GameStart
