@@ -165,12 +165,56 @@ private ConcurrentQueue<Tuple<Packet, IPEndPoint>> outMessages = new ConcurrentQ
 private ConcurrentQueue<IPEndPoint> send_EndGame_packetTo = new ConcurrentQueue<IPEndPoint>();
 ```
 # Начало игры
-Сервер не начнет игру, пока не будут подключены два Клиента.
-*Пример кода где это показано*
-Как только эти критерии будут выполнены, он отправит сообщения GameStart.
-*Пример кода GameStart с обработкой такой отправки*
-Оба клиента должны ответить GameStartAck, прежде чем сервер отправит какие-либо сообщения GameState.
-*Пример кода GameStartAck*
+Сервер не начнет игру, пока не будут подключены два клиента.
+Когда оба клиента подключены, сервер отправляет обоим клиентам сообщение GameStart.
+```c#
+if (leftPlayer.pickedSide && rightPlayer.pickedSide)
+                            {
+                                GameStarting(leftPlayer, new TimeSpan());
+                                GameStarting(rightPlayer, new TimeSpan());
+
+                                State.var = FieldState.GameStarting;
+                            }
+```
+```c#
+private void GameStarting(Player player, TimeSpan retryTimeout)
+        {
+            if (player.ready)
+                return;
+
+            if (DateTime.Now >= (player.LastPacketSentTime.Add(retryTimeout)))
+            {
+                GameStart gsp = new GameStart();
+                sendTo(player, gsp);
+            }
+        }
+```
+Оба клиента должны ответить GameStartAck прежде, чем сервер отправит какие-либо сообщения GameState.
+# Процесс игры
+Несколько раз в секунду Клиенты, и Сервер будут отправлять друг другу информацию о своем текущем состоянии.
+*Пример кода где это написано*
+
+Клиенту нужно только отправить пакет PaddlePosition.
+*Пример кода PaddlePosition*
+Передаётся одно число с плавающей запятой - позиция ракетки.
+*Пример кода отправки такого пакета*
+
+Сервер отправит пакет GameState обоим клиентам. Он будет содержать позиции ракетки и мяча, а также баллы.
+*Пример кода этого пакета*
+# Окончание игры
+Когда игра заканчивается отправляется пакет EndGame. Сервер отправят клиентам, что игра окончена и также отправляет обновленный топ 10.
+*Пример кода EndGame, а также как сервер отправляет топ 10*
+
+Клиент же просто отправляет уведомление об окончании игры, если сам инициировал выход не закончив игру.
+*Пример кода где это написано*
+
+# Игровые механики
+*Показать рисунок как выглядит коллайдер ракетки и мяча и описать, что происходит в случаях когда шар касается определенного коллайдера*
+*Пример кода коллайдера*
+
+*Показать какая скорость шара и какая скорость у ракетки*
+*Привести в пример код, где это написано*
+
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
 - Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
