@@ -1,8 +1,8 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-
+using Microsoft.Xna.Framework;
 
 namespace Pong
 {
@@ -17,7 +17,8 @@ namespace Pong
         RequestJoin = 6,
         IsHere,
         JoinAck,
-        GameStartAck
+        GameStartAck,
+        PaddlePosition //position of paddle
     }
 
     public class Packet
@@ -156,10 +157,125 @@ namespace Pong
     {
         public GameStart() : base(PacketType.GameStart) { }
     }
-    #endregion
 
     public class EndGame : Packet
     {
         public EndGame() : base(PacketType.GameEnd) { }
     }
+
+    public class PaddlePositionPacket : Packet
+    {
+        // The Paddle's Y position
+        public float Y
+        {
+            get { return BitConverter.ToSingle(data, 0); }
+            set { BitConverter.GetBytes(value).CopyTo(data, 0); }
+        }
+
+        public PaddlePositionPacket()
+            : base(PacketType.PaddlePosition)
+        {
+            data = new byte[sizeof(float)];
+
+            // Default value is zero
+            Y = 0;
+        }
+
+        public PaddlePositionPacket(byte[] bytes)
+            : base(bytes) { }
+
+        public override string ToString()
+        {
+            return string.Format("[Packet:{0}\n  timestamp={1}\n  payload size={2}" +
+                "\n  Y={3}]",
+                this.type, new DateTime(timestamp), data.Length, Y);
+        }
+    }
+
+    public class GameStatePacket : Packet
+    {
+        // Payload array offets
+        private static readonly int _leftYIndex = 0;
+        private static readonly int _rightYIndex = 4;
+        private static readonly int _ballPositionIndex = 8;
+        private static readonly int _leftScoreIndex = 16;
+        private static readonly int _rightScoreIndex = 20;
+
+        // The Left Paddle's Y position
+        public float LeftY
+        {
+            get { return BitConverter.ToSingle(data, _leftYIndex); }
+            set { BitConverter.GetBytes(value).CopyTo(data, _leftYIndex); }
+        }
+
+        // Right Paddle's Y Position
+        public float RightY
+        {
+            get { return BitConverter.ToSingle(data, _rightYIndex); }
+            set { BitConverter.GetBytes(value).CopyTo(data, _rightYIndex); }
+        }
+
+        // Ball position
+        public Vector2 BallPosition
+        {
+            get
+            {
+                return new Vector2(
+                    BitConverter.ToSingle(data, _ballPositionIndex),
+                    BitConverter.ToSingle(data, _ballPositionIndex + sizeof(float))
+                );
+            }
+            set
+            {
+                BitConverter.GetBytes(value.X).CopyTo(data, _ballPositionIndex);
+                BitConverter.GetBytes(value.Y).CopyTo(data, _ballPositionIndex + sizeof(float));
+            }
+        }
+
+        // Left Paddle's Score
+        public int LeftScore
+        {
+            get { return BitConverter.ToInt32(data, _leftScoreIndex); }
+            set { BitConverter.GetBytes(value).CopyTo(data, _leftScoreIndex); }
+        }
+
+        // Right Paddle's Score
+        public int RightScore
+        {
+            get { return BitConverter.ToInt32(data, _rightScoreIndex); }
+            set { BitConverter.GetBytes(value).CopyTo(data, _rightScoreIndex); }
+        }
+
+        public GameStatePacket()
+            : base(PacketType.GameState)
+        {
+            // Allocate data for the payload (we really shouldn't hardcode this in...)
+            data = new byte[24];
+
+            // Set default data
+            LeftY = 0;
+            RightY = 0;
+            BallPosition = new Vector2();
+            LeftScore = 0;
+            RightScore = 0;
+        }
+
+        public GameStatePacket(byte[] bytes)
+            : base(bytes) { }
+
+        public override string ToString()
+        {
+            return string.Format(
+                "[Packet:{0}\n  timestamp={1}\n  payload size={2}" +
+                "\n  LeftY={3}" +
+                "\n  RightY={4}" +
+                "\n  BallPosition={5}" +
+                "\n  LeftScore={6}" +
+                "\n  RightScore={7}]",
+                this.type, new DateTime(timestamp), data.Length, LeftY, RightY, BallPosition, LeftScore, RightScore);
+        }
+    }
+    #endregion
+
+
 }

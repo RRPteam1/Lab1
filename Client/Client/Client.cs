@@ -1,24 +1,16 @@
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
-using System.Threading;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Collections.Concurrent;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Graphics;
+using System.Reflection;
+using System.Threading;
 
 namespace Pong
 {
-    public enum ClientState
-    {
-        NotConnected,
-        Connecting,
-        WaitingForOtherPlayers,
-        InGame,
-        GameOver
-    }
-
-    class Client : Game
+    public class Client : Game
     {
         //game
         private GraphicsDeviceManager graphics;
@@ -48,6 +40,10 @@ namespace Pong
         private Paddle ourPaddle;
         private float previousY;
 
+        private Texture2D establishingConnectionMsg;
+        private Texture2D waitingForGameStartMsg;
+        private Texture2D gamveOverMsg;
+
         //states
         private ClientState state = ClientState.NotConnected;
         private Locked<bool> run = new Locked<bool>(false);
@@ -56,12 +52,14 @@ namespace Pong
         public Client(string hostname, int port)
         {
             //content folder
+            //var dir = new System.IO.FileInfo(AppDomain.CurrentDomain.BaseDirectory).Directory.Parent.Parent.Parent.FullName;
+            //Content.RootDirectory = dir + "\\Content\\bin\\Windows\\Content";
             Content.RootDirectory = "Content";
 
             //graphics setup
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferWidth = 0; //todo
-            graphics.PreferredBackBufferHeight = 0; //todo
+            graphics.PreferredBackBufferWidth = Costants.CostantPlayField.X; //todo
+            graphics.PreferredBackBufferHeight = Costants.CostantPlayField.Y; //todo
             graphics.IsFullScreen = false;
             graphics.ApplyChanges();
 
@@ -109,9 +107,9 @@ namespace Pong
             KeyboardState kbs = Keyboard.GetState(); //keyboard
             if (kbs.IsKeyDown(Keys.Escape)) //if player click esc to close game
             {
-                if ((state == ClientState.Connecting) || (state == ClientState.WaitingForOtherPlayers) || (state == ClientState.InGame))        
-                        send_end_game_pack.var = true; //end game trigger
-                
+                if ((state == ClientState.Connecting) || (state == ClientState.WaitingForOtherPlayers) || (state == ClientState.InGame))
+                    send_end_game_pack.var = true; //end game trigger
+
 
                 //stop the net thread
                 run.var = false;
@@ -180,7 +178,7 @@ namespace Pong
                     {
                         switch (message.packet.type)
                         {
-                            case PacketType.GameStart:                            
+                            case PacketType.GameStart:
                                 sendGameStartAck();
                                 break;
 
@@ -195,6 +193,17 @@ namespace Pong
                                 if (message.packet.timestamp > lastPacketReceivedTimestamp)
                                 {
                                     lastPacketReceivedTimestamp = message.packet.timestamp;
+
+                                    GameStatePacket gsp = new GameStatePacket(message.packet.ToBytesArr());
+                                    left.Score = gsp.LeftScore;
+                                    right.Score = gsp.RightScore;
+                                    ball.Position = gsp.BallPosition;
+
+                                    // Update what's not our paddle
+                                    if (ourPaddle.Side == PaddleSide.Left)
+                                        right.Position.Y = gsp.RightY;
+                                    else
+                                        left.Position.Y = gsp.LeftY;
 
                                     //todo: GameState gsp = new GameState(message.packet.ToBytesArr());
                                     //set scores of players and ball pos
@@ -227,35 +236,43 @@ namespace Pong
             graphics.GraphicsDevice.Clear(Color.Black);
 
             spriteBatch.Begin();
-
-            // Draw different things based on the state
             switch (state)
             {
                 case ClientState.Connecting:
+                    //TODO: draw connecting!
                     Console.WriteLine("Pong -- Connecting to {0}:{1}", ServerHostname, ServerPort);
                     Window.Title = String.Format("Pong -- Connecting to {0}:{1}", ServerHostname, ServerPort);
                     break;
 
                 case ClientState.WaitingForOtherPlayers:
+                    //TODO: draw waiting players!
                     Console.WriteLine("Pong -- Waiting for 2nd Player");
                     Window.Title = String.Format("Pong -- Waiting for 2nd Player");
                     break;
 
                 case ClientState.InGame:
-                    //draw the game objects
+                    ball.Draw(gameTime,spriteBatch);
+                    left.Draw(gameTime,spriteBatch, Color.Red);
+                    right.Draw(gameTime,spriteBatch, Color.Blue);
                     updateWindowTitleWithScore();
                     break;
 
                 case ClientState.GameOver:
+                    //TODO: draw game over and top 10
                     Console.WriteLine("Game Over!");
                     updateWindowTitleWithScore();
                     break;
             }
 
             spriteBatch.End();
-
+            base.Draw(gameTime);
         }
 
+        private void drawCentered(Texture2D texture)
+        {
+            Vector2 textureCenter = new Vector2(texture.Width / 2, texture.Height / 2); //scale
+            spriteBatch.Draw(texture, Costants.CostantScreenCenter, Rectangle.Empty, Color.White, 0, textureCenter, Vector2.One, SpriteEffects.None, 0); //mb layer should set to 1
+        }
         private void updateWindowTitleWithScore()
         {
             string fmt = (ourPaddle.Side == PaddleSide.Left) ?
@@ -378,7 +395,10 @@ namespace Pong
 
             if (DateTime.Now >= (lastPacketSentTime.Add(resendTimeout)))
             {
-                //TODO: paddle pos new send
+                PaddlePositionPacket ppp = new PaddlePositionPacket();
+                ppp.Y = ourPaddle.Position.Y;
+
+                sendPacket(ppp); //TODO: paddle pos new send
             }
         }
         private bool timedOut()
@@ -389,17 +409,5 @@ namespace Pong
             return (DateTime.Now > (lastPacketReceivedTime.Add(IsHereTimeout)));
         }
         #endregion
-
-
-        public static void Main(string[] args)
-        {
-            string hostname = "localhost";
-            int port = 3000;
-
-            Client client = new Client(hostname, port);
-            client.Start();
-            client.Run();
-        }
- 
     }
 }
