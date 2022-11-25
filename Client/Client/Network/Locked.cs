@@ -1,4 +1,4 @@
-﻿namespace Pong
+﻿namespace Client.Network
 {
     //to make var thread safe using simple lock method
     public class Locked<T>

@@ -1,14 +1,15 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Client.GameObjects;
+using Client.Network;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading;
 
-namespace Pong
+namespace Client.ClientCode
 {
     public class Client : Game
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 
-namespace Pong
+namespace Client.ClientCode
 {
     public static class Costants
     {

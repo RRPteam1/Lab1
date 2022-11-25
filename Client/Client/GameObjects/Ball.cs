@@ -1,9 +1,10 @@
 ﻿using System;
+using Client.ClientCode;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Pong
+namespace Client.GameObjects
 {
     // The ball that's bounced around
     public class Ball

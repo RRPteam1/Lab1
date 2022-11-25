@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 
-namespace Pong
+namespace Client.Network
 {
     public class Message
     {

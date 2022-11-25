@@ -2,9 +2,10 @@
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using Client.GameObjects;
 using Microsoft.Xna.Framework;
 
-namespace Pong
+namespace Client.Network
 {
     public enum PacketType : uint
     {
