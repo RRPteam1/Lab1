@@ -54,8 +54,8 @@ public enum PacketType : uint
 - **Серверные**
   - [AcceptJoin](#AcceptJoin)
   - [IsHereAck](#IsHereAck)
-  - GameStart
-  - GameState
+  - [GameStart](#GameStart)
+  - [GameState](#GameState)
 - **Клиентсие**
   - RequestJoin
   - IsHere
@@ -63,7 +63,7 @@ public enum PacketType : uint
   - GameStartAck
   - PaddlePosition
 - **Другие**
-  - GameEnd
+  - [GameEnd](#GameEnd)
 
 ### AcceptJoin
 AcceptJoin – сервер отправляет клиенту в ответ на запрос о подключении. Содержит в себе информацию о стороне игрока (левый/правый).
@@ -93,13 +93,27 @@ IsHereAck – сервер отправляет клиенту, для подт�
         public IsHereAck() : base(PacketType.IsHereAck) { }
     }
 ```
-GameStart
+### GameStart
 GameStart – сервер отправляет клиенту для уведомления последнего о начале игры.
-GameState
+```c#
+public class GameStart : Packet
+    {
+        public GameStart() : base(PacketType.GameStart) { }
+    }
+```
+### GameState
 GameState – сервер передает клиенту положение мяча, палочек и счет.
-GameEnd
-GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
+```c#
 
+```
+### GameEnd
+GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
+```c#
+public class EndGame : Packet
+    {
+        public EndGame() : base(PacketType.GameEnd) { }
+    }
+```
   
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
