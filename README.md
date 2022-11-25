@@ -66,5 +66,6 @@ public enum PacketType : uint
   - GameEnd
   
 # Библиотеки
+## Не забыть добавить в visual studio в расшерениях monogame template extension
 - Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
 - MonoGame.Desktop 3.5 _Используется для игрового движка_ [ссылка](https://www.nuget.org/packages/MonoGame.Framework.DesktopGL)
