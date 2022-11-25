@@ -223,18 +223,89 @@ private void sendGameState(Player player, TimeSpan resendTimeout)
 }
 ```
 ## Окончание игры
-Когда игра заканчивается отправляется пакет EndGame. Сервер отправят клиентам, что игра окончена и также отправляет обновленный топ 10.
-*Пример кода EndGame, а также как сервер отправляет топ 10*
+По окончании игры сервер отправляет обоим клиентам пакет EndGame. В нем содержится сообщение, что игра окончена, и обновленный топ-10 игроков.
+```c#
+public class EndGame : Packet
+    {
+        public TOP_ARRAY OP
+        {
+            get { return Utils<TOP_ARRAY>.FromBytes(data); }
+            set { data = Utils<TOP_ARRAY>.ToBytes(value); }
+        }
+        public EndGame() : base(PacketType.GameEnd) =>
+            data = new byte[Marshal.SizeOf(OP)]; //actually size will be always 160 bcz => 1 position is 16 bits (10*16=160)       
+    }
+```
+Если инициатором окончания игры являлся один из клиентов, то серверу и другому клиенту отправляется сообщение об окончании игры.
+## Игровые механики
+### Описание коллайдера ракетки и мяча
+Пример кода коллайдера мяча.
+```c#
+ public bool Collides(Ball ball, out PaddleCollision typeOfCollision)
+        {
+            typeOfCollision = default;
+            // Make sure enough time has passed for a new collisions
+            // (this prevents a bug where a user can build up a lot of speed in the ball)
+            if (DateTime.Now < (lastCollisiontime.Add(minCollisionTimeGap)))
+                return false;
 
-Клиент же просто отправляет уведомление об окончании игры, если сам инициировал выход не закончив игру.
-*Пример кода где это написано*
+            // Top & bottom get first priority
+            if (ball.CollisionField.Intersects(TopCollisionArea))
+            {
+                typeOfCollision = PaddleCollision.WithTop;
+                lastCollisiontime = DateTime.Now;
+                return true;
+            }
 
-# Игровые механики
-*Показать рисунок как выглядит коллайдер ракетки и мяча и описать, что происходит в случаях когда шар касается определенного коллайдера*
-*Пример кода коллайдера*
+            if (ball.CollisionField.Intersects(BottomCollisionArea))
+            {
+                typeOfCollision = PaddleCollision.WithBottom;
+                lastCollisiontime = DateTime.Now;
+                return true;
+            }
 
-*Показать какая скорость шара и какая скорость у ракетки*
-*Привести в пример код, где это написано*
+            // And check the front
+            if (ball.CollisionField.Intersects(FrontCollisionArea))
+            {
+                typeOfCollision = PaddleCollision.WithFront;
+                lastCollisiontime = DateTime.Now;
+                return true;
+            }
+            // todo
+            return true;
+        }
+```
+
+В данном коде показано, как изменяется положение ракетки в пространстве и каким образом задана коллизия.
+```c#
+public Rectangle TopCollisionArea
+        {
+            get { return new Rectangle(Position.ToPoint(), new Point(Costants.CostantPaddleSize.X, 4)); }
+        }
+
+        public Rectangle BottomCollisionArea
+        {
+            get
+            {
+                return new Rectangle(
+                    (int)Position.X, FrontCollisionArea.Bottom,
+                    Costants.CostantPaddleSize.X, 4
+                );
+            }
+        }
+
+        public Rectangle FrontCollisionArea
+        {
+            get
+            {
+                Point pos = Position.ToPoint();
+                pos.Y += 4;
+                Point size = new Point(Costants.CostantPaddleSize.X, Costants.CostantPaddleSize.Y - 8);
+
+                return new Rectangle(pos, size);
+            }
+        }
+```
 
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
