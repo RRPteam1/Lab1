@@ -27,10 +27,8 @@ namespace Pong
             get { return new Rectangle(Position.ToPoint(), Costants.CostantBallSize); }
         }
 
-        public void LoadContent(ContentManager content)
-        {
-            sprite = content.Load<Texture2D>("ball.png"); //todo sprites
-        }
+        public void LoadContent(ContentManager content) => sprite = content.Load<Texture2D>("ball.png");
+        
 
         /// <summary>
         /// Center the ball on the board
@@ -65,13 +63,11 @@ namespace Pong
         public void ServerSideUpdate(GameTime gameTime)
         {
             float timeDelta = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            Position = Vector2.Add(Position, timeDelta * Speed); //ddd the distance
+            Position = Vector2.Add(Position, timeDelta * Speed);
         }
 
-        public void Draw(GameTime gameTime, SpriteBatch spriteBatch)
-        {
-            spriteBatch.Draw(sprite, Position);
-        }
+        public void Draw(GameTime gameTime, SpriteBatch spriteBatch) => spriteBatch.Draw(sprite, Position);
+        
     }
 }
 

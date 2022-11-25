@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Linq;
 
 namespace Pong
 {
@@ -171,7 +172,7 @@ namespace Pong
                     bool gotMessage = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
                     if (gotMessage)
                     {
-                        EndGame eg = new EndGame();
+                        EndGame eg = endingGame();                           
                         eg.Send(udpClient, to);
                     }
                 }
@@ -198,11 +199,42 @@ namespace Pong
                 bool have = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
                 while (have)
                 {
-                    EndGame bp = new EndGame();
+                    EndGame bp = endingGame();
                     bp.Send(udpClient, to);
                     have = send_EndGame_packetTo.TryDequeue(out to);
                 }
             }
+        }
+
+        public EndGame endingGame()
+        {
+            EndGame eg = new EndGame();
+            TOP leftP = new TOP
+            {
+                Score = 0 //todo: use actual score
+            };
+            leftP.Name = $"player{leftP.Score}"; //todo: use actual nick
+            TOP rightP = new TOP
+            {
+                Score = 1 //todo: use actual score
+            };
+            rightP.Name = $"player{rightP.Score}"; //todo: use actual nick
+
+            CRU db = new CRU();
+            var have = db.Read();
+            var isToUpdate_left = have.Where(x => x.Name.Equals(leftP.Name)).FirstOrDefault();
+            var isToUpdate_right = have.Where(x => x.Name.Equals(rightP.Name)).FirstOrDefault();
+            if (!isToUpdate_left.Name.Equals("")) db.Update(leftP.Name, leftP.Score); //empty (means no such player)
+            else db.Create(leftP);
+            if (!isToUpdate_right.Name.Equals("")) db.Update(rightP.Name, rightP.Score);
+            else db.Create(rightP);
+
+            TOP_ARRAY top = new TOP_ARRAY //fetch new data from db
+            {
+                arrStruct = db.Read().ToArray()
+            };
+            eg.OP = top;
+            return eg;
         }
 
         /// <summary>

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 
 namespace Pong
@@ -160,7 +161,13 @@ namespace Pong
 
     public class EndGame : Packet
     {
-        public EndGame() : base(PacketType.GameEnd) { }
+        public TOP_ARRAY OP
+        {
+            get { return Utils<TOP_ARRAY>.FromBytes(data); }
+            set { data = Utils<TOP_ARRAY>.ToBytes(value); }
+        }
+        public EndGame() : base(PacketType.GameEnd) =>
+            data = new byte[Marshal.SizeOf(OP)]; //actually size will be always 160 bcz => 1 position is 16 bits (10*16=160)       
     }
 
     public class PaddlePositionPacket : Packet
