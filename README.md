@@ -131,6 +131,7 @@ public class EndGame : Packet
 - Клиент запрашивает подключение. 
 - Сервер отвечает согласием и передает игровую сторону клиента (право/лево). 
 - Клиент отвечает, что получил пакет с установленной для него стороной игры.
+![Установление соединения]Documentation/TCP_handshake.png
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
 - Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
