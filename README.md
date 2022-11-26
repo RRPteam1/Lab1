@@ -131,11 +131,18 @@ public GameStatePacket()
         }
 ```
 #### GameEnd
-GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
+GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена. Также
+сервер отправляет структуру _Top Array_, чтобы передать новые очки из базы данных. 
 ```c#
 public class EndGame : Packet
     {
-        public EndGame() : base(PacketType.GameEnd) { }
+        public TOP_ARRAY OP
+        {
+            get { return Utils<TOP_ARRAY>.FromBytes(data); }
+            set { data = Utils<TOP_ARRAY>.ToBytes(value); }
+        }
+        public EndGame() : base(PacketType.GameEnd) =>
+            data = new byte[Marshal.SizeOf(OP)]; //actually size will be always 160 bcz => 1 position is 16 bits (10*16=160)       
     }
 ```
 ## Установление соединения
