@@ -313,7 +313,7 @@ namespace Server.ServerCode
         private void checkForBallCollisions() //TODO: check comments here!
         {
             //top and bottom hitreg
-            float ballY = ball.Position.Y;
+            int ballY = ball.Position.Y;
             if ((ballY <= ball.TopmostY) || (ballY >= ball.BottommostY)) //if ((ballY <= 0) || (ballY + GameGeometry.BallSize.Y * 2 + 22 >= GameGeometry.PlayArea.Y))
             {
                 ball.Speed.Y *= -1;
@@ -347,23 +347,12 @@ namespace Server.ServerCode
             //safety check
             if (collision == GameObjects.PaddleCollision.None) return;
 
-            //randomize speed
-            ball.Speed = RandomizeSpeed(ball);
-
             //go in the opposite direction
             ball.Speed.X *= -1;
 
             //hit reg with top or bottom
             if ((collision == GameObjects.PaddleCollision.WithTop) || (collision == GameObjects.PaddleCollision.WithBottom))
                 ball.Speed.Y *= -1;
-        }
-        private Point RandomizeSpeed(GameObjects.Ball ball)
-        {
-            var speedX = (int)(ball.Speed.X * random.Next(1, 60) / 1.0) % 7;
-            var speedY = (int)(ball.Speed.Y * random.Next(1, 60) / 1.0) % 7;
-            if (Math.Abs(speedX) >= 3) ball.Speed.X = speedX;          
-            if (Math.Abs(speedY) >= 3) ball.Speed.Y = speedY;
-            return ball.Speed;
         }
         #endregion
     }

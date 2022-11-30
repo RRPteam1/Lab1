@@ -109,25 +109,34 @@ namespace Lab1
         #region Net
         private void NetRun()
         {
-            while (run.var)
+            do
             {
                 bool canRead = udpClient.Available > 0;
                 int numToWrite = outMessages.Count;
 
                 if (canRead)
                 {
-                    IPEndPoint ep = new(IPAddress.Any, 0);
-                    byte[] data = udpClient.Receive(ref ep); //recv
-
-                    Network.Message nm = new()
+                    try
                     {
-                        sender = ep,
-                        packet = new Network.Packet(data),
-                        recvTime = DateTime.Now
-                    };
+                        IPEndPoint ep = new(IPAddress.Any, 0);
+                        byte[] data = udpClient.Receive(ref ep); //recv
 
-                    inMessages.Enqueue(nm);
-                    label2.Invoke(new Action(() => label2.Text = $"RCVD: {nm.packet!}")); //TODO: remove
+                        Network.Message nm = new()
+                        {
+                            sender = ep,
+                            packet = new Network.Packet(data),
+                            recvTime = DateTime.Now
+                        };
+
+                        inMessages.Enqueue(nm);
+                        label2.Invoke(new Action(() => label2.Text = $"RCVD: {nm.packet!}")); //TODO: remove
+                    }
+                    catch (Exception ex) { 
+                        MessageBox.Show(ex.Message, ex.Source, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        send_end_game_pack.var = true;
+                        run.var = false;
+                        state = ClientState.GameOver;
+                    }
                 }
 
                 //write out queued
@@ -141,7 +150,7 @@ namespace Lab1
                 }
 
                 if (!canRead && (numToWrite == 0)) Thread.Sleep(1);
-            }
+            } while (run.var);
 
             if (send_end_game_pack.var)
             {
@@ -150,8 +159,6 @@ namespace Lab1
                 Thread.Sleep(1000);
             }
         }
-
-
 
         private void SendPacket(Network.Packet packet)
         {
@@ -211,7 +218,7 @@ namespace Lab1
         {
             //todo: anticheat here
             //if (previousY == ourPaddle.Position.Y)
-                //return;
+            //return;
 
             if (DateTime.Now >= (lastPacketSentTime.Add(resendTimeout)))
             {
@@ -242,7 +249,6 @@ namespace Lab1
             run.var = false;
             state = ClientState.GameOver;
         }
-
         /// <summary>
         /// Game timer tick
         /// </summary>
@@ -353,7 +359,7 @@ namespace Lab1
                 //check if player wants quit
                 if ((state == ClientState.Connecting) || (state == ClientState.WaitingForOtherPlayers) || (state == ClientState.InGame))
                     send_end_game_pack.var = true; //trigger to send end packet
-                
+
 
                 //stop the network thread
                 run.var = false;

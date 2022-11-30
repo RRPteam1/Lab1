@@ -136,20 +136,24 @@ namespace Server.ServerCode
 
                 if (canRead)
                 {
-                    IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] data = udpClient.Receive(ref ep); //receive data
-
-                    //enque a new message
-                    Network.Message nm = new()
+                    try
                     {
-                        sender = ep,
-                        packet = new Network.Packet(data),
-                        recvTime = DateTime.Now
-                    };
+                        IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                        byte[] data = udpClient.Receive(ref ep); //receive data
 
-                    inMessages.Enqueue(nm);
+                        //enque a new message
+                        Network.Message nm = new()
+                        {
+                            sender = ep,
+                            packet = new Network.Packet(data),
+                            recvTime = DateTime.Now
+                        };
 
-                    Console.WriteLine("RCVD: {0}, \tfrom: {1}", nm.packet.type, nm.sender);
+                        inMessages.Enqueue(nm);
+
+                        Console.WriteLine("RCVD: {0}, \tfrom: {1}", nm.packet.type, nm.sender);
+                    }
+                    catch (Exception ex) { Console.WriteLine(ex.Message);}
                 }
 
                 //send queued messages
