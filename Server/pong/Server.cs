@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.IO;
 
 namespace Pong
 {
@@ -11,6 +12,7 @@ namespace Pong
     {
         private UdpClient udpClient;
         public readonly int PORT;
+        public readonly string path = @"C:\logfile.txt";
 
         //messages
         Thread netThread;
@@ -38,7 +40,11 @@ namespace Pong
         {
             if (run.var)
             {
-                Console.WriteLine("[Server] Shutdown requested by user.");
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[Server] Shutdown requested by user.");
+
+                //Console.WriteLine("[Server] Shutdown requested by user.");
 
                 //close any active games
                 Queue<Field> arenas = new Queue<Field>(activeGames.Keys);
@@ -76,7 +82,12 @@ namespace Pong
             if (g.rightPlayer.isSet) player_in_game.TryRemove(g.rightPlayer.ip, out a);
 
             activeGames.TryRemove(g, out byte b); //remove from the active games
-            Console.WriteLine($"TryRemove with data {b}");
+
+            using (FileStream fstream = new FileStream(path, FileMode.Append))
+            using (StreamWriter stream = new StreamWriter(fstream))
+                stream.WriteLine($"TryRemove with data {b}");
+
+            //Console.WriteLine($"TryRemove with data {b}");
         }
 
         /// <summary>
@@ -86,7 +97,11 @@ namespace Pong
         {
             if (run.var)
             {
-                Console.WriteLine($"[Server] is running on port: {PORT}");
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine($"[Server] is running on port: {PORT}");
+
+                //Console.WriteLine($"[Server] is running on port: {PORT}");
                 netThread = new Thread(new ThreadStart(netRun));
                 netThread.Start();
 
@@ -129,8 +144,12 @@ namespace Pong
         private void netRun()
         {
             if (!run.var) return;
-             
-            Console.WriteLine("[Server] Waiting for UDP datagrams on port {0}", PORT);
+
+            using (FileStream fstream = new FileStream(path, FileMode.Append))
+            using (StreamWriter stream = new StreamWriter(fstream))
+                stream.WriteLine($"[Server] Waiting for UDP datagrams on port {PORT}");
+
+            //Console.WriteLine("[Server] Waiting for UDP datagrams on port {0}", PORT);
 
             while (run.var)
             {
@@ -153,7 +172,11 @@ namespace Pong
 
                     inMessages.Enqueue(nm);
 
-                    Console.WriteLine("RCVD: {0}", nm.packet);
+                    using (FileStream fstream = new FileStream(path, FileMode.Append))
+                    using (StreamWriter stream = new StreamWriter(fstream))
+                        stream.WriteLine($"RCVD: {nm.packet}");
+
+                    //Console.WriteLine("RCVD: {0}", nm.packet);
                 }
 
                 //send queued messages
@@ -162,7 +185,11 @@ namespace Pong
                     bool gotMessage = outMessages.TryDequeue(out Tuple<Packet, IPEndPoint> msg);
                     if (gotMessage) msg.Item1.Send(udpClient, msg.Item2);
 
-                    Console.WriteLine("SENT: {0}", msg.Item1);
+                    using (FileStream fstream = new FileStream(path, FileMode.Append))
+                    using (StreamWriter stream = new StreamWriter(fstream))
+                        stream.WriteLine($"SENT: {msg.Item1}");
+
+                    //Console.WriteLine("SENT: {0}", msg.Item1);
                 }
 
                 //notify of game end
@@ -179,12 +206,20 @@ namespace Pong
                 if (!canRead && (numToWrite == 0) && (numToDisconnect == 0)) Thread.Sleep(1); //nothing is happening
             }
 
-            Console.WriteLine("[Server] Done listening for UDP datagrams");
+            using (FileStream fstream = new FileStream(path, FileMode.Append))
+            using (StreamWriter stream = new StreamWriter(fstream))
+                stream.WriteLine("[Server] Done listening for UDP datagrams");
+
+            //Console.WriteLine("[Server] Done listening for UDP datagrams");
 
             Queue<Field> games = new Queue<Field>(activeGames.Keys);
             if (games.Count > 0)
             {
-                Console.WriteLine("[Server] Waiting for active Areans to finish...");
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[Server] Waiting for active Areans to finish...");
+
+                //Console.WriteLine("[Server] Waiting for active Areans to finish...");
                 foreach (Field arena in games)
                     arena.JoinThread();
             }
@@ -192,7 +227,11 @@ namespace Pong
             //check who need to see end packet
             if (send_EndGame_packetTo.Count > 0)
             {
-                Console.WriteLine("[Server] Notifying remaining clients of shutdown...");
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[Server] Notifying remaining clients of shutdown...");
+
+                //Console.WriteLine("[Server] Notifying remaining clients of shutdown...");
 
                 //send end game packet until got no one to send
                 bool have = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
