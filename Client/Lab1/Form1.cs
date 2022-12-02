@@ -103,5 +103,11 @@ namespace Lab1
                 MessageBox.Show("Невозможно подключится", ex.Message, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            //todo: закрывать приложение, если человек нажал да
+            Application.Exit();
+        }
     }
 }

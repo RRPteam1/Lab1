@@ -150,29 +150,35 @@ namespace Server.ServerCode
                 bool canRead = udpClient.Available > 0;
                 int numToWrite = outMessages.Count;
                 int numToDisconnect = send_EndGame_packetTo.Count;
-
-                if (canRead)
+                try
                 {
-                    IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
-                    byte[] data = udpClient.Receive(ref ep); //receive data
-
-                    //enque a new message
-                    Network.Message nm = new()
+                    if (canRead)
                     {
-                        sender = ep,
-                        packet = new Network.Packet(data),
-                        recvTime = DateTime.Now
-                    };
+                        IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                        byte[] data = udpClient.Receive(ref ep); //receive data
 
-                    inMessages.Enqueue(nm);
+                        //enque a new message
+                        Network.Message nm = new()
+                        {
+                            sender = ep,
+                            packet = new Network.Packet(data),
+                            recvTime = DateTime.Now
+                        };
 
+<<<<<<< HEAD
                     using (FileStream fstream = new FileStream(path, FileMode.Append))
                     using (StreamWriter stream = new StreamWriter(fstream))
                         stream.WriteLine($"RCVD: {nm.packet.type}, from: {nm.sender}");
 
                     //Console.WriteLine("RCVD: {0}, \tfrom: {1}", nm.packet.type, nm.sender);
-                }
+=======
+                        inMessages.Enqueue(nm);
 
+                        Console.WriteLine("RCVD: {0}, \tfrom: {1}", nm.packet.type, nm.sender);
+                    }
+>>>>>>> a6158fda0b4e454c52278934effa3a1adb256781
+                }
+                catch (Exception ex) { Console.WriteLine(ex.Message); }
                 //send queued messages
                 for (int i = 0; i < numToWrite; i++)
                 {
@@ -192,7 +198,7 @@ namespace Server.ServerCode
                     bool gotMessage = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
                     if (gotMessage)
                     {
-                        Network.Packet.EndGame eg = new ();
+                        Network.Packet.EndGame eg = new();
                         eg.Send(udpClient, to);
                     }
                 }

@@ -1,4 +1,4 @@
-﻿int port = 3000;
+﻿int port = 6000;
 Server.ServerCode.Server server = new(port);
 server.Start();
 server.Run();
