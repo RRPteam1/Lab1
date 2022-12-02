@@ -4,6 +4,7 @@ namespace Server.GameObjects
 {
     public class Player
     {
+        public string Name;
         public Paddle paddle;
         public IPEndPoint ip;
         public DateTime LastPacketReceivedTime = DateTime.MinValue; //Server Time

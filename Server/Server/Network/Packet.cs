@@ -101,7 +101,12 @@ namespace Server.Network
         #region Client packets
         public class RequestJoin : Packet
         {
-            public RequestJoin() : base(PacketType.RequestJoin) { }
+            public string Nickname
+            {
+                get => BitConverter.ToString(data, 0);
+                set => Encoding.ASCII.GetBytes(value).CopyTo(data, 0);
+            }
+            public RequestJoin() : base(PacketType.RequestJoin) => data = new byte[12]; //??I guess this ammount will be enough
         }
         public class IsHere : Packet
         {
@@ -142,18 +147,41 @@ namespace Server.Network
 
         public class GameStart : Packet
         {
-            public string Nickname
+            private static readonly int leftIndex = 0;
+            private static readonly int rightIndex = 12;
+            public string Left
             {
-                get => BitConverter.ToString(data, 0);
-                set => Encoding.ASCII.GetBytes(value).CopyTo(data, 0);
+                get { return BitConverter.ToString(data, leftIndex); }
+                set { Encoding.ASCII.GetBytes(value).CopyTo(data, leftIndex); }
             }
-            public GameStart() : base(PacketType.GameStart) => data = new byte[30]; //??I guess this ammount will be enough
-
+            public string Right
+            {
+                get { return BitConverter.ToString(data, rightIndex); }
+                set { Encoding.ASCII.GetBytes(value).CopyTo(data, rightIndex); }
+            }
+            public GameStart(byte[] bytes) : base(bytes) { }
+            public GameStart() : base(PacketType.GameStart) {
+                data = new byte[24]; //allocate data !we shouldn't hardcode this!
+                //set defaults
+                Left = string.Empty;
+                Right = string.Empty; //608
+            }
         }
 
         public class EndGame : Packet
         {
-            public EndGame() : base(PacketType.GameEnd) { }
+            private static readonly int ArrayIndex = 4;
+
+            public string Array //array separator \n inline separator \t (exmp Alex\t3\n) => Name: Alex Score = 3
+            {
+                get { return BitConverter.ToString(data, ArrayIndex); }
+                set { Encoding.ASCII.GetBytes(value).CopyTo(data, ArrayIndex); }
+            }
+            public EndGame() : base(PacketType.GameEnd) {
+                data = new byte[164]; //160 bytes for array and 4 bytes to packet type
+                Array = string.Empty; //empty array
+            }
+            public EndGame(byte[] bytes) : base(bytes) { }
         }
 
         public class PaddlePositionPacket : Packet

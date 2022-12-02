@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Server.ServerCode
 {
@@ -13,7 +14,7 @@ namespace Server.ServerCode
         Thread netThread;
         private ConcurrentQueue<Network.Message> inMessages = new();
         private ConcurrentQueue<Tuple<Network.Packet, IPEndPoint>> outMessages = new();
-        private ConcurrentQueue<IPEndPoint> send_EndGame_packetTo = new();
+        private ConcurrentQueue<GameObjects.Player> send_EndGame_packetTo = new();
 
         //game
         private ConcurrentDictionary<Field, byte> activeGames = new();
@@ -72,7 +73,6 @@ namespace Server.ServerCode
             if (g.rightPlayer.isSet) player_in_game.TryRemove(g.rightPlayer.ip, out a);
 
             activeGames.TryRemove(g, out byte b); //remove from the active games
-            Console.WriteLine($"TryRemove with data {b}");
         }
 
         /// <summary>
@@ -97,13 +97,13 @@ namespace Server.ServerCode
                 {
                     if (someMessage.packet.type == Network.PacketType.RequestJoin)
                     {
-                        bool add = game.TryAddPlayer(someMessage.sender);
+                        bool add = game.TryAddPlayer(someMessage.sender, Encoding.ASCII.GetString(someMessage.packet.data)); //check it
                         if (add) player_in_game.TryAdd(someMessage.sender, game);
 
                         if (!add)
                         {
                             setUpNewGame();
-                            game.TryAddPlayer(someMessage.sender);
+                            game.TryAddPlayer(someMessage.sender, Encoding.ASCII.GetString(someMessage.packet.data));
                             player_in_game.TryAdd(someMessage.sender, game);
                         }
                         game.Enque(someMessage); //dispatch message
@@ -137,7 +137,7 @@ namespace Server.ServerCode
                 {
                     if (canRead)
                     {
-                        IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
+                        IPEndPoint ep = new(IPAddress.Any, 0);
                         byte[] data = udpClient.Receive(ref ep); //receive data
 
                         //enque a new message
@@ -149,8 +149,6 @@ namespace Server.ServerCode
                         };
 
                         inMessages.Enqueue(nm);
-
-                        Console.WriteLine("RCVD: {0}, \tfrom: {1}", nm.packet.type, nm.sender);
                     }
                 }
                 catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -158,19 +156,32 @@ namespace Server.ServerCode
                 for (int i = 0; i < numToWrite; i++)
                 {
                     bool gotMessage = outMessages.TryDequeue(out Tuple<Network.Packet, IPEndPoint> msg);
-                    if (gotMessage) msg.Item1.Send(udpClient, msg.Item2);
-
-                    Console.WriteLine("SENT: {0}", msg.Item1);
+                    if (gotMessage) msg.Item1.Send(udpClient, msg.Item2);                  
                 }
 
                 //notify of game end
                 for (int i = 0; i < numToDisconnect; i++)
                 {
-                    bool gotMessage = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
+                    bool gotMessage = send_EndGame_packetTo.TryDequeue(out GameObjects.Player to);
                     if (gotMessage)
                     {
+                        Network.DB.CRU database = new();
+                        var players = database.Read();
+                        var newPlayer = new Network.DB.TOP() { name = to.Name, score = to.paddle.Score };
+
+                        Network.DB.TOP found = new();
+                        try
+                        {
+                            found = players.Where(x => x.name.Equals(newPlayer.name)).FirstOrDefault();
+                        }
+                        catch { found = null; }
+                        if (found != null) database.Update(newPlayer.name, newPlayer.score);
+                        else database.Create(newPlayer);
+                        players = database.Read();
+
                         Network.Packet.EndGame eg = new();
-                        eg.Send(udpClient, to);
+                        eg.Array = Utils.Converter.BuildStr(players);
+                        eg.Send(udpClient, to.ip);
                     }
                 }
 
@@ -193,11 +204,11 @@ namespace Server.ServerCode
                 Console.WriteLine("[Server] Notifying remaining clients of shutdown...");
 
                 //send end game packet until got no one to send
-                bool have = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
+                bool have = send_EndGame_packetTo.TryDequeue(out GameObjects.Player to);
                 while (have)
                 {
                     Network.Packet.EndGame bp = new();
-                    bp.Send(udpClient, to);
+                    bp.Send(udpClient, to.ip);
                     have = send_EndGame_packetTo.TryDequeue(out to);
                 }
             }
@@ -214,7 +225,7 @@ namespace Server.ServerCode
         /// Queue a EndPacket
         /// </summary>
         /// <param name="to">reciver of packet</param>
-        public void SendEnd(IPEndPoint to) => send_EndGame_packetTo.Enqueue(to);
+        public void SendEnd(GameObjects.Player to) => send_EndGame_packetTo.Enqueue(to);
         #endregion
     }
 }

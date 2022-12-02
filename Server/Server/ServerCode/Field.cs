@@ -45,7 +45,7 @@ namespace Server.ServerCode
             leftPlayer.paddle = new(GameObjects.PaddleSide.Left);
             rightPlayer.paddle = new(GameObjects.PaddleSide.Right);
         }
-        public bool TryAddPlayer(IPEndPoint playerIP)
+        public bool TryAddPlayer(IPEndPoint playerIP, string nick)
         {
             if (State.var == FieldState.WaitingForPlayers)
             {
@@ -54,12 +54,14 @@ namespace Server.ServerCode
                     if (!leftPlayer.isSet)
                     {
                         leftPlayer.ip = playerIP;
+                        leftPlayer.Name = nick;
                         return true;
                     }
 
                     if (!rightPlayer.isSet)
                     {
                         rightPlayer.ip = playerIP;
+                        rightPlayer.Name = nick;
                         return true;
                     }
                 }
@@ -175,12 +177,12 @@ namespace Server.ServerCode
                     if (player.paddle.Side == GameObjects.PaddleSide.Left)
                     {
                         if (rightPlayer.isSet)
-                            server.SendEnd(rightPlayer.ip);
+                            server.SendEnd(rightPlayer);
                     }
                     else
                     {
                         if (leftPlayer.isSet)
-                            server.SendEnd(leftPlayer.ip);
+                            server.SendEnd(leftPlayer);
                     }
                 }
 
@@ -202,9 +204,9 @@ namespace Server.ServerCode
                 Console.WriteLine("[{0:000}] Notifying Players of server shutdown", Id);
 
                 if (leftPlayer.isSet)
-                    server.SendEnd(leftPlayer.ip);
+                    server.SendEnd(leftPlayer);
                 if (rightPlayer.isSet)
-                    server.SendEnd(rightPlayer.ip);
+                    server.SendEnd(rightPlayer);
             }
 
             server.EndGame_notify(this);
@@ -239,7 +241,7 @@ namespace Server.ServerCode
                 switch (mes.packet.type)
                 {
                     case Network.PacketType.RequestJoin:
-                        Console.WriteLine("[{0:000}] RequestJoin from {1}", Id, player.ip);
+                        Console.WriteLine("[{0:000}] RequestJoin from {1} with nickname {2}", Id, player.ip, player.Name);
                         sendAcceptJoin(player);
                         break;
 
@@ -273,6 +275,8 @@ namespace Server.ServerCode
             if (DateTime.Now >= (player.LastPacketSentTime.Add(retryTimeout)))
             {
                 Network.Packet.GameStart gsp = new();
+                gsp.Left = leftPlayer.Name;
+                gsp.Right = rightPlayer.Name;
                 sendTo(player, gsp);
             }
         }
@@ -324,14 +328,14 @@ namespace Server.ServerCode
             {
                 //right scored (reset ball)
                 rightPlayer.paddle.Score++;
-                Console.WriteLine("[{0:000}] Right Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+                Console.WriteLine("[{0:000}] Right Player scored ({1} vs {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
                 ball.Initialize();
             }
             else if (ballX >= ball.RightmostX)
             {
                 //left scored (reset ball)
                 leftPlayer.paddle.Score++;
-                Console.WriteLine("[{0:000}] Left Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+                Console.WriteLine("[{0:000}] Left Player scored ({1} vs {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
                 ball.Initialize();
             }
 

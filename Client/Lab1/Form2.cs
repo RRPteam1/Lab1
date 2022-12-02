@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace Lab1
 {
@@ -67,13 +68,13 @@ namespace Lab1
                 case ClientState.Connecting:
                     //TODO: draw connecting!
                     //Console.WriteLine("Pong -- Connecting to {0}:{1}", ip, port);
-                    this.Text = String.Format("Pong -- Connecting to {0}:{1}", ip, port);
+                    this.Text = String.Format("Подключение к {0}:{1}", ip, port);
                     break;
 
                 case ClientState.WaitingForOtherPlayers:
                     //TODO: draw waiting players!
                     //Console.WriteLine("Pong -- Waiting for 2nd Player");
-                    this.Text = String.Format("Pong -- Waiting for 2nd Player");
+                    this.Text = String.Format("Ожидание 2ого игрока");
                     break;
 
                 case ClientState.InGame:
@@ -99,7 +100,7 @@ namespace Lab1
             }
             else
             {
-                string fmt = (ourPaddle?.Side == GameObjects.PaddleSide.Left) ? "[{0}] -- Pong -- {1}" : "{0} -- Pong -- [{1}]";
+                string fmt = (ourPaddle?.Side == GameObjects.PaddleSide.Left) ? "[{0}] vs {1}" : "{0} vs [{1}]";
                 this.Text = string.Format(fmt, left.Score, right.Score);
             }
 
@@ -167,6 +168,7 @@ namespace Lab1
             if (DateTime.Now >= (lastPacketSentTime.Add(retryTimeout)))
             {
                 Network.Packet.RequestJoin gsp = new();
+                gsp.Nickname = nickname;
                 SendPacket(gsp);
             }
         }
@@ -208,6 +210,7 @@ namespace Lab1
         private void SendGameStartAck()
         {
             Network.Packet.GameStartAckPacket gsap = new();
+            //gsap
             SendPacket(gsap);
         }
         private void SendPaddlePosition(TimeSpan resendTimeout)
@@ -226,7 +229,6 @@ namespace Lab1
         }
         private bool TimedOut()
         {
-            label4.Text = $"Last RCVD:{lastPacketReceivedTime}  RESULT = {(DateTime.Now > (lastPacketReceivedTime.Add(IsHereTimeout)))}";
             //new record
             if (lastPacketReceivedTime == DateTime.MinValue)
                 return false;
@@ -252,7 +254,7 @@ namespace Lab1
         /// <param name="e"></param>
         private void GameTimer_Tick(object sender, EventArgs e)
         {
-            label3.Text = $"State:{state}";
+            label3.Text = $"{state}";
             //if player dissconected
             if (TimedOut()) state = ClientState.GameOver;
             bool gotMessage = inMessages.TryDequeue(out Network.Message? message);
@@ -263,6 +265,10 @@ namespace Lab1
                 //shutdown the network thread 
                 run.var = false;
                 state = ClientState.GameOver;
+
+                Network.Packet.EndGame eg = new(message.packet.ToBytesArr());           //todo wtf
+                Form3 dialog = new(this, eg.Array);
+                dialog.ShowDialog();
             }
 
             switch (state)
@@ -293,8 +299,11 @@ namespace Lab1
 
                             case Network.PacketType.GameStart:
                                 //start the game and ack
+                                Network.Packet.GameStart gs = new(message.packet.ToBytesArr());
+                                label1.Text = Utils.Converter.ToStr(gs.Left);
+                                label2.Text = Utils.Converter.ToStr(gs.Right);
                                 SendGameStartAck();
-                                state = ClientState.InGame;
+                                state = ClientState.InGame;                     
                                 break;
                         }
 
@@ -308,7 +317,7 @@ namespace Lab1
                     {
                         switch (message?.packet.type)
                         {
-                            case Network.PacketType.GameStart:
+                            case Network.PacketType.GameStart:                              
                                 SendGameStartAck();
                                 break;
 

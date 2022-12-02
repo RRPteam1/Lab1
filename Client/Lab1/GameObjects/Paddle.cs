@@ -5,6 +5,7 @@
         private PictureBox sprite;
         public int Score = 0;
         public readonly PaddleSide Side;
+        public string nickname;
         public Form destination { get; private set; }
 
         public Point Position { get => sprite.Location; set => sprite.Location = value; }
@@ -31,6 +32,7 @@
                 default: throw new Exception("How? Side is not left and not right");
             }
 
+            nickname = string.Empty;
             Score = 0;
             form.Controls.Add(sprite);
         }
