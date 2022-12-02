@@ -1,7 +1,10 @@
-﻿using System.Collections.Concurrent;
+﻿using Server.GameObjects;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Net;
+using System.Numerics;
 
 namespace Server.ServerCode
 {
@@ -16,6 +19,7 @@ namespace Server.ServerCode
 
     public class Field
     {
+        public readonly string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "logfile.txt");
         public Utils.Locked<FieldState> State { get; private set; } = new();
         private GameObjects.Ball ball = new();
         public GameObjects.Player leftPlayer { get; private set; } = new();
@@ -77,7 +81,11 @@ namespace Server.ServerCode
         public void Stop() => stopRequested.var = true;
         private void Run()
         {
-            Console.WriteLine("[{0:000}] Waiting for players", Id);
+            using (FileStream fstream = new FileStream(path, FileMode.Append))
+            using (StreamWriter stream = new StreamWriter(fstream))
+                stream.WriteLine("[{0:000}] Waiting for players", Id);
+
+            //Console.WriteLine("[{0:000}] Waiting for players", Id);
             TimeSpan gameTime = TimeSpan.Zero;
 
             TimeSpan notifyGameStartTimeout = TimeSpan.FromSeconds(2.5);
@@ -130,7 +138,11 @@ namespace Server.ServerCode
                             sendGameState(rightPlayer, new TimeSpan());
 
                             State.var = FieldState.InGame;
-                            Console.WriteLine("[{0:000}] Starting Game", Id);
+                            using (FileStream fstream = new FileStream(path, FileMode.Append))
+                            using (StreamWriter stream = new StreamWriter(fstream))
+                                stream.WriteLine("[{0:000}] Starting Game", Id);
+
+                            //Console.WriteLine("[{0:000}] Starting Game", Id);
                             gameTimer.Start();
                         }
 
@@ -170,7 +182,11 @@ namespace Server.ServerCode
                 {
                     GameObjects.Player player = mes.sender.Equals(leftPlayer.ip) ? leftPlayer : rightPlayer;
                     running = false;
-                    Console.WriteLine("[{0:000}] Quit detected from {1} at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
+                    using (FileStream fstream = new FileStream(path, FileMode.Append))
+                    using (StreamWriter stream = new StreamWriter(fstream))
+                        stream.WriteLine("[{0:000}] Quit detected from {1} at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
+
+                    //Console.WriteLine("[{0:000}] Quit detected from {1} at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
 
                     if (player.paddle.Side == GameObjects.PaddleSide.Left)
                     {
@@ -195,11 +211,19 @@ namespace Server.ServerCode
 
             gameTimer.Stop();
             State.var = FieldState.GameOver;
-            Console.WriteLine("[{0:000}] Game Over, total game time was {1}", Id, gameTimer.Elapsed);
+            using (FileStream fstream = new FileStream(path, FileMode.Append))
+            using (StreamWriter stream = new StreamWriter(fstream))
+                stream.WriteLine("[{0:000}] Game Over, total game time was {1}", Id, gameTimer.Elapsed);
+
+            //Console.WriteLine("[{0:000}] Game Over, total game time was {1}", Id, gameTimer.Elapsed);
 
             if (stopRequested.var)
             {
-                Console.WriteLine("[{0:000}] Notifying Players of server shutdown", Id);
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[{0:000}] Notifying Players of server shutdown", Id);
+
+                //Console.WriteLine("[{0:000}] Notifying Players of server shutdown", Id);
 
                 if (leftPlayer.isSet)
                     server.SendEnd(leftPlayer.ip);
@@ -225,7 +249,13 @@ namespace Server.ServerCode
 
             bool timeoutDetected = (DateTime.Now > (player.LastPacketReceivedTime.Add(Timeout)));
             if (timeoutDetected)
-                Console.WriteLine("[{0:000}] Timeout detected on {1} player at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
+            {
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[{0:000}] Timeout detected on {1} player at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
+            }
+
+            //Console.WriteLine("[{0:000}] Timeout detected on {1} player at {2}", Id, player.paddle.Side, gameTimer.Elapsed);
 
             return timeoutDetected;
         }
@@ -239,7 +269,11 @@ namespace Server.ServerCode
                 switch (mes.packet.type)
                 {
                     case Network.PacketType.RequestJoin:
-                        Console.WriteLine("[{0:000}] RequestJoin from {1}", Id, player.ip);
+                        using (FileStream fstream = new FileStream(path, FileMode.Append))
+                        using (StreamWriter stream = new StreamWriter(fstream))
+                            stream.WriteLine("[{0:000}] RequestJoin from {1}", Id, player.ip);
+
+                        //Console.WriteLine("[{0:000}] RequestJoin from {1}", Id, player.ip);
                         sendAcceptJoin(player);
                         break;
 
@@ -324,14 +358,22 @@ namespace Server.ServerCode
             {
                 //right scored (reset ball)
                 rightPlayer.paddle.Score++;
-                Console.WriteLine("[{0:000}] Right Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[{0:000}] Right Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+
+                //Console.WriteLine("[{0:000}] Right Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
                 ball.Initialize();
             }
             else if (ballX >= ball.RightmostX)
             {
                 //left scored (reset ball)
                 leftPlayer.paddle.Score++;
-                Console.WriteLine("[{0:000}] Left Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+                using (FileStream fstream = new FileStream(path, FileMode.Append))
+                using (StreamWriter stream = new StreamWriter(fstream))
+                    stream.WriteLine("[{0:000}] Left Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
+
+                //Console.WriteLine("[{0:000}] Left Player scored ({1} -- {2}) at {3}", Id, leftPlayer.paddle.Score, rightPlayer.paddle.Score, gameTimer.Elapsed);
                 ball.Initialize();
             }
 
