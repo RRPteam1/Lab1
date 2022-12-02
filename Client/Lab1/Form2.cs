@@ -129,10 +129,8 @@ namespace Lab1
                         };
 
                         inMessages.Enqueue(nm);
-                        label2.Invoke(new Action(() => label2.Text = $"RCVD: {nm.packet!}")); //TODO: remove
                     }
                     catch (Exception ex) { 
-                        MessageBox.Show(ex.Message, ex.Source, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         send_end_game_pack.var = true;
                         run.var = false;
                         state = ClientState.GameOver;
@@ -145,8 +143,6 @@ namespace Lab1
                     bool have = outMessages.TryDequeue(out Network.Packet? packet);
                     if (have)
                         packet?.Send(udpClient);
-
-                    label1.Invoke(new Action(() => label1.Text = $"Sent: {packet!}")); //TODO: remove
                 }
 
                 if (!canRead && (numToWrite == 0)) Thread.Sleep(1);

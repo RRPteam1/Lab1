@@ -133,10 +133,9 @@ namespace Server.ServerCode
                 bool canRead = udpClient.Available > 0;
                 int numToWrite = outMessages.Count;
                 int numToDisconnect = send_EndGame_packetTo.Count;
-
-                if (canRead)
+                try
                 {
-                    try
+                    if (canRead)
                     {
                         IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
                         byte[] data = udpClient.Receive(ref ep); //receive data
@@ -153,9 +152,8 @@ namespace Server.ServerCode
 
                         Console.WriteLine("RCVD: {0}, \tfrom: {1}", nm.packet.type, nm.sender);
                     }
-                    catch (Exception ex) { Console.WriteLine(ex.Message);}
                 }
-
+                catch (Exception ex) { Console.WriteLine(ex.Message); }
                 //send queued messages
                 for (int i = 0; i < numToWrite; i++)
                 {
@@ -171,7 +169,7 @@ namespace Server.ServerCode
                     bool gotMessage = send_EndGame_packetTo.TryDequeue(out IPEndPoint to);
                     if (gotMessage)
                     {
-                        Network.Packet.EndGame eg = new ();
+                        Network.Packet.EndGame eg = new();
                         eg.Send(udpClient, to);
                     }
                 }
