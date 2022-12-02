@@ -8,7 +8,7 @@ namespace Server.ServerCode
     {
         private UdpClient udpClient;
         public readonly int PORT;
-        public readonly string path = @"C:\logfile.txt";
+        public readonly string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "logfile.txt");
 
         //messages
         Thread netThread;
