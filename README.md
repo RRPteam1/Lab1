@@ -27,11 +27,11 @@
 
 ```c#
 public class Packet
-{
-  public byte[] data = new byte[0];  //data that is used as an answer to someone
-  public long timestamp; //time when packet was created
-  public PacketType type; //type of packet
-}
+    {
+        public byte[] data = Array.Empty<byte>();  //data that is used as an answer to someone
+        public long timestamp; //time when packet was created
+        public PacketType type;
+        }
 ```
 ### Типы пакетов (PacketType)
 
@@ -116,27 +116,93 @@ public class GameStart : Packet
 #### GameStatePacket
 GameStatePacket – сервер передает клиенту положение мяча, палочек и счет.
 ```c#
-public GameStatePacket()
-            : base(PacketType.GameState)
+ public class GameStatePacket : Packet
         {
-            // Allocate data for the payload (we really shouldn't hardcode this in...)
-            data = new byte[24];
+            //data offets
+            private static readonly int leftYIndex = 0;
+            private static readonly int rightYIndex = 4;
+            private static readonly int ballPositionIndex = 8;
+            private static readonly int leftScoreIndex = 16;
+            private static readonly int rightScoreIndex = 20;
 
-            // Set default data
-            LeftY = 0;
-            RightY = 0;
-            BallPosition = new Vector2();
-            LeftScore = 0;
-            RightScore = 0;
-        }
+            //left Y position
+            public int LeftY
+            {
+                get { return BitConverter.ToInt32(data, leftYIndex); }
+                set { BitConverter.GetBytes(value).CopyTo(data, leftYIndex); }
+            }
+
+            //right Y position
+            public int RightY
+            {
+                get { return BitConverter.ToInt32(data, rightYIndex); }
+                set { BitConverter.GetBytes(value).CopyTo(data, rightYIndex); }
+            }
+
+            //ball position
+            public Point BallPosition
+            {
+                get
+                {
+                    return new Point(
+                        BitConverter.ToInt32(data, ballPositionIndex),
+                        BitConverter.ToInt32(data, ballPositionIndex + sizeof(Int32))
+                    );
+                }
+                set
+                {
+                    BitConverter.GetBytes(value.X).CopyTo(data, ballPositionIndex);
+                    BitConverter.GetBytes(value.Y).CopyTo(data, ballPositionIndex + sizeof(Int32));
+                }
+            }
+
+            //left score
+            public int LeftScore
+            {
+                get { return BitConverter.ToInt32(data, leftScoreIndex); }
+                set { BitConverter.GetBytes(value).CopyTo(data, leftScoreIndex); }
+            }
+
+            //right score
+            public int RightScore
+            {
+                get { return BitConverter.ToInt32(data, rightScoreIndex); }
+                set { BitConverter.GetBytes(value).CopyTo(data, rightScoreIndex); }
+            }
+
+            public GameStatePacket() : base(PacketType.GameState)
+            {
+                data = new byte[24]; //allocate data !we shouldn't hardcode this!
+
+                //set defaults
+                LeftY = 0;
+                RightY = 0;
+                BallPosition = new Point();
+                LeftScore = 0;
+                RightScore = 0;
+            }
+
+            public GameStatePacket(byte[] bytes) : base(bytes) { }
+}
 ```
 #### GameEnd
 GameEnd – отправляет сервер клиенту или наоборот, чтобы уведомить другого игрока, что игра окончена.
 ```c#
-public class EndGame : Packet
-    {
-        public EndGame() : base(PacketType.GameEnd) { }
-    }
+        public class EndGame : Packet
+        {
+            private static readonly int ArrayIndex = 4;
+
+            public string Array //array separator \n inline separator \t (exmp Alex\t3\n) => Name: Alex Score = 3
+            {
+                get { return BitConverter.ToString(data, ArrayIndex); }
+                set { Encoding.ASCII.GetBytes(value).CopyTo(data, ArrayIndex); }
+            }
+            public EndGame() : base(PacketType.GameEnd) {
+                data = new byte[164]; //160 bytes for array and 4 bytes to packet type
+                Array = string.Empty; //empty array
+            }
+            public EndGame(byte[] bytes) : base(bytes) { }
+        }
 ```
 ## Установление соединения
 - Клиент запрашивает подключение. 
@@ -225,16 +291,31 @@ private void sendGameState(Player player, TimeSpan resendTimeout)
 ## Окончание игры
 По окончании игры сервер отправляет обоим клиентам пакет EndGame. В нем содержится сообщение, что игра окончена, и обновленный топ-10 игроков.
 ```c#
-public class EndGame : Packet
-    {
-        public TOP_ARRAY OP
-        {
-            get { return Utils<TOP_ARRAY>.FromBytes(data); }
-            set { data = Utils<TOP_ARRAY>.ToBytes(value); }
-        }
-        public EndGame() : base(PacketType.GameEnd) =>
-            data = new byte[Marshal.SizeOf(OP)]; //actually size will be always 160 bcz => 1 position is 16 bits (10*16=160)       
-    }
+//notify of game end
+                for (int i = 0; i < numToDisconnect; i++)
+                {
+                    bool gotMessage = send_EndGame_packetTo.TryDequeue(out GameObjects.Player to);
+                    if (gotMessage)
+                    {
+                        Network.DB.CRU database = new();
+                        var players = database.Read();
+                        var newPlayer = new Network.DB.TOP() { name = to.Name, score = to.paddle.Score };
+
+                        Network.DB.TOP found = new();
+                        try
+                        {
+                            found = players.Where(x => x.name.Equals(newPlayer.name)).FirstOrDefault();
+                        }
+                        catch { found = null; }
+                        if (found != null) database.Update(newPlayer.name, newPlayer.score);
+                        else database.Create(newPlayer);
+                        players = database.Read();
+
+                        Network.Packet.EndGame eg = new();
+                        eg.Array = Utils.Converter.BuildStr(players);
+                        eg.Send(udpClient, to.ip);
+                    }
+                }
 ```
 Если инициатором окончания игры являлся один из клиентов, то серверу и другому клиенту отправляется сообщение об окончании игры.
 ## Игровые механики
@@ -310,4 +391,3 @@ public Rectangle TopCollisionArea
 # Библиотеки
 ## Не забыть добавить в visual studio в расширениях monogame template extension
 - Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
-- MonoGame.Desktop 3.5 _Используется для игрового движка_ [ссылка](https://www.nuget.org/packages/MonoGame.Framework.DesktopGL)
