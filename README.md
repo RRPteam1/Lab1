@@ -389,5 +389,4 @@ public Rectangle TopCollisionArea
 ```
 
 # Библиотеки
-## Не забыть добавить в visual studio в расширениях monogame template extension
 - Newtonsoft.Json _Используется для БД_ [ссылка](https://www.nuget.org/packages/Newtonsoft.Json)
